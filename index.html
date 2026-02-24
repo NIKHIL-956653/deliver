@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+  <title>Neon Chain Reaction</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%2300ffcc'/%3E%3C/svg%3E">
+  <style>
+    /* SYSTEM LOADER STYLES */
+    #loader {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: #000; z-index: 10000;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: opacity 0.5s ease-out;
+    }
+    .spinner {
+      width: 50px; height: 50px;
+      border: 5px solid #333; border-top: 5px solid #00ffcc;
+      border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .loading-text { color: #00ffcc; font-family: sans-serif; letter-spacing: 2px; }
+  </style>
+</head>
+<body>
+
+  <div id="loader">
+    <div class="spinner"></div>
+    <div class="loading-text">INITIALIZING...</div>
+  </div>
+
+  <div id="mainMenu" class="screen active" style="display:none;"> 
+    <h1>Neon Chain Reaction</h1>
+    
+    <div class="menu-scroll">
+        <div class="menu-section">
+            <h3>Game Setup</h3>
+            <div class="toolbar vertical">
+                <label>Mode:
+                    <select id="gameModeSelect">
+                        <option value="normal" selected>Normal</option>
+                        <option value="timeAttack">Time Attack</option>
+                        <option value="saga">Saga Mode</option>
+                        <option value="bliss">Bliss Mode</option>
+                    </select>
+                </label>
+
+                <label>Theme:
+                    <select id="themeSelect">
+                        <option value="default" selected>Classic Neon</option>
+                        <option value="theme-cyberpunk">Cyberpunk 2077</option>
+                        <option value="theme-magma">Magma Core</option>
+                        <option value="theme-matrix">The Matrix</option>
+                        </select>
+                </label>
+
+                <div id="standardControls">
+                    <label>Grid Size:
+                        <select id="gridSelect">
+                            <option value="6x6">6×6 (Quick)</option>
+                            <option value="9x9" selected>9×9 (Standard)</option>
+                            <option value="12x12">12×12 (Epic)</option>
+                        </select>
+                    </label>
+                    <label>Players:
+                        <select id="playerCountSelect">
+                            <option value="2" selected>2 Players</option>
+                            <option value="3">3 Players</option>
+                            <option value="4">4 Players</option>
+                        </select>
+                    </label>
+                    
+                    <label>AI Intelligence:
+                        <select id="aiDifficultySelect">
+                            <option value="easy">Easy (Smart)</option>
+                            <option value="hard" selected>Hard (Strategic 💀)</option>
+                        </select>
+                    </label>
+
+                    <label>AI Speed:
+                        <select id="aiSpeedSelect">
+                            <option value="300">Fast ⚡</option>
+                            <option value="1000" selected>Normal</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <h3>Player Config</h3>
+            <div id="playerSettingsContainer" class="player-settings-container"></div>
+        </div>
+    </div>
+
+    <div class="menu-footer">
+        <button id="startGameBtn" class="btn large primary">🚀 START GAME</button>
+        <button id="statsBtn" class="btn">📊 Stats</button>
+    </div>
+  </div>
+
+  <div id="gameView" class="screen">
+    <div id="systemSidebar">
+        <button id="closeSidebar" class="close-btn">&times;</button>
+        
+        <div id="matrixSidebarControls" class="system-controls" style="display: none;">
+            <div class="sidebar-header">SYSTEM CONTROLS</div>
+            <button id="toggleRain" class="matrix-btn active">RAIN: ON</button>
+            <button id="toggleSymbols" class="matrix-btn">MODE: KANJI</button>
+            <button id="toggleFlash" class="matrix-btn active">FLASH: ON</button>
+        </div>
+
+        <div id="cyberpunkSidebarControls" class="system-controls" style="display: none;">
+            <div class="sidebar-header">CYBERLINK HUD</div>
+            <button id="toggleScanlines" class="cyber-btn active">SCANLINES: ON</button>
+            <button id="toggleGlitch" class="cyber-btn">GLITCH: OFF</button>
+            <button id="toggleHUD" class="cyber-btn active">HUD: SHARP</button>
+        </div>
+
+        <div id="magmaSidebarControls" class="system-controls" style="display: none;">
+            <div class="sidebar-header">MAGMA CORE</div>
+            <button id="toggleLava" class="magma-btn active">LAVA: ON</button>
+            <button id="toggleHeat" class="magma-btn active">HEAT: ON</button>
+        </div>
+    </div>
+
+    <div class="game-header">
+        <button id="backBtn" class="btn small">⬅ Menu</button>
+        <button id="sidebarToggle" class="btn small">⚙️</button>
+        <div class="status-bar">
+            <span id="turnBadge" class="badge"></span>
+            <span id="statusText">Player 1</span>
+        </div>
+        <button id="hintBtn" class="btn small" style="border-color: #ffd700; color: #ffd700;">
+            💡 <span id="hintCount">0</span>
+        </button>
+        <div id="timerContainer" style="display:none;">
+            <span id="timerDisplay"><span id="timeLeft"></span>s</span>
+        </div>
+        <button id="undoBtn" class="btn small">Undo</button>
+    </div>
+
+    <div class="hud-container">
+        <div id="hudMessage" class="hud-message"></div>
+        <div id="territoryMeter" class="territory-meter"></div>
+    </div>
+
+    <div class="board-container">
+        <div id="board" class="board"></div>
+    </div>
+    <button id="soundBtn" class="floating-btn">🔊</button>
+  </div>
+
+  <div id="gameModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <h2 id="modalTitle" class="modal-title">Game Over</h2>
+      <div id="modalBody" class="modal-body"></div>
+      <div class="modal-actions">
+        <button id="modalMenuBtn" class="modal-btn secondary">Menu</button>
+        <button id="modalReplayBtn" class="modal-btn secondary">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="adModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <h2 class="modal-title" style="color: #ffd700;">Need Help?</h2>
+      <div id="adProgressContainer" style="display:none; margin: 20px 0;">
+          <div style="background:#333; height:10px; border-radius:5px; overflow:hidden;">
+              <div id="adBar" style="width:0%; height:100%; background:#00ffcc;"></div>
+          </div>
+      </div>
+      <div class="modal-actions">
+        <button id="closeAdBtn" class="modal-btn secondary">No Thanks</button>
+        <button id="watchAdBtn" class="modal-btn primary">📺 Watch Ad</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="statsModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <h2 class="modal-title">Career Stats</h2>
+      <div id="statsBody" class="modal-body"></div>
+      <button id="closeStatsBtn" class="modal-btn primary">Close</button>
+    </div>
+  </div>
+
+  <div id="achievement-container" aria-live="polite" style="position:fixed; top:20px; right:20px; z-index:9999; display:flex; flex-direction:column; gap:8px;"></div>
+
+  <script type="module" src="js/game.js"></script>
+
+  <script>
+    // GLOBAL SYSTEM LOADER
+    window.onload = function() {
+        setTimeout(() => {
+            const loader = document.getElementById('loader');
+            const menu = document.getElementById('mainMenu');
+            if(loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => { 
+                    loader.style.display = 'none'; 
+                    if(menu) menu.style.display = 'flex'; 
+                }, 500);
+            }
+        }, 1500); 
+    };
+  </script>
+</body>
+</html>
