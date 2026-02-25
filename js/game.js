@@ -93,17 +93,36 @@ function init() {
     showInterstitialAd(() => skipSagaLevel());
   });
 
+  document.getElementById("sagaSkipBtn")?.addEventListener("click", () => {
+    showInterstitialAd(() => skipSagaLevel());
+  });
+
+  document.getElementById("sagaPlayerCountSelect")?.addEventListener("change", e => {
+    const wrapper = document.getElementById("sagaAiDifficultyWrapper");
+    if (wrapper) wrapper.style.display = e.target.value === "ai" ? "" : "none";
+  });
+
   const themeSelect = $("#themeSelect");
+  const sidebarThemeSelect = document.getElementById("sidebarThemeSelect");
   const savedTheme = getSavedTheme();
 
   if (savedTheme) {
     applyTheme(savedTheme);
     if (themeSelect) themeSelect.value = savedTheme;
+    if (sidebarThemeSelect) sidebarThemeSelect.value = savedTheme;
   }
 
   themeSelect?.addEventListener("change", e => {
     applyTheme(e.target.value);
     saveTheme(e.target.value);
+    if (sidebarThemeSelect) sidebarThemeSelect.value = e.target.value;
+  });
+
+  sidebarThemeSelect?.addEventListener("change", e => {
+    applyTheme(e.target.value);
+    saveTheme(e.target.value);
+    if (themeSelect) themeSelect.value = e.target.value;
+    openSidebar(); // refresh sidebar controls to match new theme
   });
 
   // --- SIDEBAR ---
@@ -182,6 +201,12 @@ function openSidebar() {
     document.getElementById("cyberpunkSidebarControls").style.display = "block";
   else if (document.body.classList.contains("theme-magma"))
     document.getElementById("magmaSidebarControls").style.display = "block";
+
+  // Sync sidebar theme dropdown with current theme
+  const current = ["theme-matrix", "theme-cyberpunk", "theme-magma"]
+    .find(c => document.body.classList.contains(c)) || "default";
+  const sidebarThemeSelect = document.getElementById("sidebarThemeSelect");
+  if (sidebarThemeSelect) sidebarThemeSelect.value = current;
 }
 
 function applyTheme(t) {
@@ -265,10 +290,17 @@ function handleModeChange() {
     if (standardControls) standardControls.style.display = "none";
     if (sagaControls) sagaControls.style.display = "block";
     if (sagaMenuInfo) sagaMenuInfo.style.display = "none";
+    // Hide player config for saga (it manages its own players)
+    const playerSection = document.querySelector(".menu-section:last-of-type");
+    if (playerSection) playerSection.style.display = "none";
   } else {
     if (standardControls) standardControls.style.display = "block";
     if (sagaControls) sagaControls.style.display = "none";
     if (sagaMenuInfo) sagaMenuInfo.style.display = "none";
+    // Show & render player config
+    const playerSection = document.querySelector(".menu-section:last-of-type");
+    if (playerSection) playerSection.style.display = "";
+    setupPlayers(parseInt(playerCountSelect?.value, 10) || 2);
   }
 }
 
@@ -278,6 +310,10 @@ function resetGame() {
   // Hide saga objective when not in saga mode
   const sagaObj = document.getElementById("sagaObjective");
   if (sagaObj && mode !== "saga") sagaObj.classList.remove("active");
+
+  // Show/hide in-game skip button
+  const sagaSkipBtn = document.getElementById("sagaSkipBtn");
+  if (sagaSkipBtn) sagaSkipBtn.style.display = (mode === "saga") ? "block" : "none";
 
   if (mode === "saga") {
     const level = SAGA_LEVELS[sagaCurrentLevel];
@@ -342,17 +378,31 @@ function initSagaLevel(level) {
   hintsUsed = 0;
 
   const aiDiff = document.getElementById("sagaAiDifficultySelect")?.value || "hard";
+  const sagaMode = document.getElementById("sagaPlayerCountSelect")?.value || "ai";
+  const playerCount = sagaMode === "3" ? 3 : 2;
 
-  players = [
-    { name: "You", color: "#00ffcc" },
-    { name: "Enemy", color: "#ff4757" }
-  ];
-  playerTypes = [
-    { type: "human" },
-    { type: "ai", difficulty: aiDiff }
-  ];
-  scores = [0, 0];
-  firstMove = [false, false];
+  if (sagaMode === "2") {
+    players = [
+      { name: "Player 1", color: "#00ffcc" },
+      { name: "Player 2", color: "#ff4757" }
+    ];
+    playerTypes = [{ type: "human" }, { type: "human" }];
+  } else if (sagaMode === "3") {
+    players = [
+      { name: "Player 1", color: "#00ffcc" },
+      { name: "Player 2", color: "#ff4757" },
+      { name: "Player 3", color: "#ffd700" }
+    ];
+    playerTypes = [{ type: "human" }, { type: "human" }, { type: "human" }];
+  } else {
+    players = [
+      { name: "You", color: "#00ffcc" },
+      { name: "Enemy", color: "#ff4757" }
+    ];
+    playerTypes = [{ type: "human" }, { type: "ai", difficulty: aiDiff }];
+  }
+  scores = Array(playerCount).fill(0);
+  firstMove = Array(playerCount).fill(false);
 
   board = Array.from({ length: rows }, () =>
     Array.from({ length: cols }, () => ({

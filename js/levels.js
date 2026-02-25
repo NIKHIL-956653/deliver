@@ -605,6 +605,413 @@ export const SAGA_LEVELS = [
             { x: 6, y: 1, player: 1, count: 3 },   // interior, cap=4
             { x: 7, y: 2, player: 1, count: 2 }    // x=7 edge, cap=3
         ]
+    },
+
+    // ── LEVEL 16 ─────────────────────────────────────────────────────────
+    // THE DUMBBELL — 7×7, two offset rectangular zones joined by one bridge
+    //
+    // Left zone: x=0-2, y=0-4 (upper-left box)
+    // Bridge: [3,3] only — single cell connecting the two zones
+    // Right zone: x=4-6, y=2-6 (lower-right box)
+    // Players must cross the entire board diagonally through one pinch point.
+    // Psychological goal: maximum tension at the bridge, dramatic tempo shift.
+    // Difficulty: Hard.
+    //
+    //  □ □ □ ■ ■ ■ ■
+    //  □ □ □ ■ ■ ■ ■
+    //  □ □ □ ■ □ □ □
+    //  □ □ □ □ □ □ □   ← bridge at [3,3]
+    //  □ □ □ ■ □ □ □
+    //  ■ ■ ■ ■ □ □ □
+    //  ■ ■ ■ ■ □ □ □
+    {
+        id: 16,
+        name: "The Dumbbell",
+        description: "Two zones, one bridge. Control that single cell — or lose everything!",
+        rows: 7, cols: 7,
+        blockedCells: [
+            [3,0],[4,0],[5,0],[6,0],
+            [3,1],[4,1],[5,1],[6,1],
+            [3,2],
+            // bridge at [3,3] — open
+            [3,4],
+            [0,5],[1,5],[2,5],[3,5],
+            [0,6],[1,6],[2,6],[3,6]
+        ],
+        presetOrbs: [
+            // Player — top-left zone
+            { x: 0, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 0, y: 1, player: 0, count: 2 },   // x=0 edge, cap=3
+            // AI — bottom-right zone
+            { x: 6, y: 6, player: 1, count: 1 },   // corner, cap=2
+            { x: 5, y: 6, player: 1, count: 2 },   // y=6 edge, cap=3
+            { x: 6, y: 5, player: 1, count: 2 }    // x=6 edge, cap=3
+        ]
+    },
+
+    // ── LEVEL 17 ─────────────────────────────────────────────────────────
+    // THE SPINE — 3 rows × 9 cols, the longest corridor in the game
+    //
+    // No walls. Just a 9-cell-wide strip — far longer than Corridor War (7 wide).
+    // The extra distance means chains take longer to cross.
+    // Players must race to the center and hold it.
+    // Psychological goal: long-range planning, chain momentum matters most.
+    // Difficulty: Hard.
+    //
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    {
+        id: 17,
+        name: "The Spine",
+        description: "Nine cells wide, three rows deep. The longest fight of your life!",
+        rows: 3, cols: 9,
+        blockedCells: [],
+        presetOrbs: [
+            // Player — left side
+            { x: 0, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 1, player: 0, count: 3 },   // interior, cap=4
+            { x: 0, y: 2, player: 0, count: 1 },   // corner, cap=2
+            // AI — right side
+            { x: 8, y: 0, player: 1, count: 1 },   // corner, cap=2
+            { x: 7, y: 1, player: 1, count: 3 },   // interior, cap=4
+            { x: 8, y: 2, player: 1, count: 1 }    // corner, cap=2
+        ]
+    },
+
+    // ── LEVEL 18 ─────────────────────────────────────────────────────────
+    // THE BATTLESHIP — 5 rows × 9 cols, wide medium rectangle
+    //
+    // First 5-row board in the game. More open than a corridor, more compact
+    // than a square. Creates a mid-range arena with interesting vertical depth.
+    // No walls — just the unique 5:9 aspect ratio.
+    // Psychological goal: comfortable but unfamiliar dimensions, mid-range combat.
+    // Difficulty: Hard.
+    //
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    {
+        id: 18,
+        name: "The Battleship",
+        description: "Five rows, nine columns. A wide open sea — perfect for sweeping chain reactions!",
+        rows: 5, cols: 9,
+        blockedCells: [],
+        presetOrbs: [
+            // Player — top-left
+            { x: 0, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 1, player: 0, count: 3 },   // interior, cap=4
+            { x: 0, y: 2, player: 0, count: 2 },   // x=0 edge, cap=3
+            // AI — bottom-right
+            { x: 8, y: 4, player: 1, count: 1 },   // corner, cap=2
+            { x: 7, y: 3, player: 1, count: 3 },   // interior, cap=4
+            { x: 8, y: 2, player: 1, count: 2 }    // x=8 edge, cap=3
+        ]
+    },
+
+    // ── LEVEL 19 ─────────────────────────────────────────────────────────
+    // TRIPLE GATES — 8×8, three staggered horizontal walls, rotating gap positions
+    //
+    // Wall at y=2: gap at far RIGHT (x=7)
+    // Wall at y=4: gap at far LEFT  (x=0)
+    // Wall at y=6: gap at CENTER    (x=4)
+    // The player must zigzag across the full board width three times.
+    // Harder than The Gauntlet (level 14) which only has two walls.
+    // Psychological goal: extreme navigation, the longest route ever.
+    // Difficulty: Expert.
+    //
+    //  □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □
+    //  ■ ■ ■ ■ ■ ■ ■ □   ← gap at x=7
+    //  □ □ □ □ □ □ □ □
+    //  □ ■ ■ ■ ■ ■ ■ ■   ← gap at x=0
+    //  □ □ □ □ □ □ □ □
+    //  ■ ■ ■ ■ □ ■ ■ ■   ← gap at x=4
+    //  □ □ □ □ □ □ □ □
+    {
+        id: 19,
+        name: "Triple Gates",
+        description: "Three walls. Three gaps. All on opposite sides. Survive the zigzag!",
+        rows: 8, cols: 8,
+        blockedCells: [
+            // Wall y=2 — gap at x=7
+            [0,2],[1,2],[2,2],[3,2],[4,2],[5,2],[6,2],
+            // Wall y=4 — gap at x=0
+            [1,4],[2,4],[3,4],[4,4],[5,4],[6,4],[7,4],
+            // Wall y=6 — gap at x=4
+            [0,6],[1,6],[2,6],[3,6],[5,6],[6,6],[7,6]
+        ],
+        presetOrbs: [
+            // Player — bottom zone (y=7)
+            { x: 0, y: 7, player: 0, count: 1 },   // corner, cap=2
+            { x: 2, y: 7, player: 0, count: 2 },   // y=7 edge, cap=3
+            { x: 5, y: 7, player: 0, count: 2 },   // y=7 edge, cap=3
+            // AI — top zone (y=0-1)
+            { x: 7, y: 0, player: 1, count: 1 },   // corner, cap=2
+            { x: 5, y: 1, player: 1, count: 3 },   // interior, cap=4
+            { x: 3, y: 0, player: 1, count: 2 }    // y=0 edge, cap=3
+        ]
+    },
+
+    // ── LEVEL 20 ─────────────────────────────────────────────────────────
+    // GRAND FINALE — 9×9, the largest board in the entire game
+    //
+    // No blocked cells. Pure, unrestricted chain reaction warfare on 81 cells.
+    // The ultimate test of strategy at maximum scale.
+    // Players start far apart with 4 orbs each — an explosive opening.
+    // Psychological goal: epic climax, spectacular visual chaos, earned victory.
+    // Difficulty: Expert. (Biggest board = longest chains = highest variance)
+    //
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    {
+        id: 20,
+        name: "Grand Finale",
+        description: "9×9. 81 cells. No walls. The biggest battle ends here — make it count!",
+        rows: 9, cols: 9,
+        blockedCells: [],
+        presetOrbs: [
+            // Player — bottom-left cluster
+            { x: 0, y: 8, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 8, player: 0, count: 2 },   // y=8 edge, cap=3
+            { x: 0, y: 7, player: 0, count: 2 },   // x=0 edge, cap=3
+            { x: 1, y: 7, player: 0, count: 3 },   // interior, cap=4
+            // AI — top-right cluster
+            { x: 8, y: 0, player: 1, count: 1 },   // corner, cap=2
+            { x: 7, y: 0, player: 1, count: 2 },   // y=0 edge, cap=3
+            { x: 8, y: 1, player: 1, count: 2 },   // x=8 edge, cap=3
+            { x: 7, y: 1, player: 1, count: 3 }    // interior, cap=4
+        ]
+    },
+
+    // ── LEVEL 21 ─────────────────────────────────────────────────────────
+    // THE CHECKERBOARD — 7×7, alternating interior blocked cells
+    //
+    // Nine single-cell obstacles at every odd-odd interior position create a
+    // subtle mesh. Chain reactions split around each obstacle, producing
+    // unexpected angles and multi-path cascades.
+    // Psychological goal: familiar board, unfamiliar physics — surprise & discovery.
+    // Difficulty: Medium-Hard.
+    //
+    //  □ □ □ □ □ □ □
+    //  □ ■ □ ■ □ ■ □
+    //  □ □ □ □ □ □ □
+    //  □ ■ □ ■ □ ■ □
+    //  □ □ □ □ □ □ □
+    //  □ ■ □ ■ □ ■ □
+    //  □ □ □ □ □ □ □
+    {
+        id: 21,
+        name: "The Checkerboard",
+        description: "Nine obstacles scattered in a mesh. Chains bounce everywhere — read the pattern!",
+        rows: 7, cols: 7,
+        blockedCells: [
+            [1,1],[3,1],[5,1],
+            [1,3],[3,3],[5,3],
+            [1,5],[3,5],[5,5]
+        ],
+        presetOrbs: [
+            // Player — bottom-left
+            { x: 0, y: 6, player: 0, count: 1 },   // corner, cap=2
+            { x: 0, y: 4, player: 0, count: 2 },   // x=0 edge, cap=3
+            { x: 2, y: 6, player: 0, count: 2 },   // y=6 edge, cap=3
+            // AI — top-right
+            { x: 6, y: 0, player: 1, count: 1 },   // corner, cap=2
+            { x: 6, y: 2, player: 1, count: 2 },   // x=6 edge, cap=3
+            { x: 4, y: 0, player: 1, count: 2 }    // y=0 edge, cap=3
+        ]
+    },
+
+    // ── LEVEL 22 ─────────────────────────────────────────────────────────
+    // THE CANYON — 9×9, triple-row horizontal wall with two distant passages
+    //
+    // Rows y=3,4,5 form a thick horizontal canyon wall. The only crossings
+    // are at x=1 (far left) and x=7 (far right). Both sides must race to hold
+    // both passages simultaneously — holding just one is not enough.
+    // Psychological goal: dual-chokepoint warfare, positional split decision.
+    // Difficulty: Hard.
+    //
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ ■ □ □ □ □ □ □ ■  ← passes at x=1 and x=7 (wait, see below)
+    //  □ □ ■ ■ ■ ■ ■ □ ■  (x=1 & x=7 open, rest blocked)
+    //  □ ■ □ □ □ □ □ □ ■
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    {
+        id: 22,
+        name: "The Canyon",
+        description: "A triple-row wall splits the board. Only two distant gaps connect the halves!",
+        rows: 9, cols: 9,
+        blockedCells: [
+            // y=3: all except x=1 and x=7
+            [0,3],[2,3],[3,3],[4,3],[5,3],[6,3],[8,3],
+            // y=4: all except x=1 and x=7
+            [0,4],[2,4],[3,4],[4,4],[5,4],[6,4],[8,4],
+            // y=5: all except x=1 and x=7
+            [0,5],[2,5],[3,5],[4,5],[5,5],[6,5],[8,5]
+        ],
+        presetOrbs: [
+            // Player — top-left
+            { x: 0, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 0, y: 1, player: 0, count: 2 },   // x=0 edge, cap=3
+            { x: 2, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            // AI — bottom-right
+            { x: 8, y: 8, player: 1, count: 1 },   // corner, cap=2
+            { x: 8, y: 7, player: 1, count: 2 },   // x=8 edge, cap=3
+            { x: 6, y: 8, player: 1, count: 2 }    // y=8 edge, cap=3
+        ]
+    },
+
+    // ── LEVEL 23 ─────────────────────────────────────────────────────────
+    // THE FORTRESS — 9×9, AI inside a rectangular fortress with 2 center gates
+    //
+    // A fortress wall (x=2 and x=6 verticals + y=2 and y=6 horizontals) encloses
+    // a 3×3 interior. Top gate at [4,2] and bottom gate at [4,6] are the only
+    // two entrances. The player must attack while the AI defends from inside.
+    // Psychological goal: asymmetric siege, intense bottleneck pressure.
+    // Difficulty: Hard.
+    //
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ ■ ■ □ ■ ■ □ □  ← top wall, gate at x=4
+    //  □ □ ■ [inside] ■ □ □
+    //  □ □ ■ [     ] ■ □ □
+    //  □ □ ■ [     ] ■ □ □
+    //  □ □ ■ ■ □ ■ ■ □ □  ← bottom wall, gate at x=4
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    {
+        id: 23,
+        name: "The Fortress",
+        description: "The enemy is locked inside. Two gates, thick walls — breach them or lose!",
+        rows: 9, cols: 9,
+        blockedCells: [
+            [2,2],[3,2],[5,2],[6,2],   // top wall (gate at x=4)
+            [2,3],[6,3],               // left/right walls y=3
+            [2,4],[6,4],               // left/right walls y=4
+            [2,5],[6,5],               // left/right walls y=5
+            [2,6],[3,6],[5,6],[6,6]    // bottom wall (gate at x=4)
+        ],
+        presetOrbs: [
+            // Player — outside perimeter (flanking)
+            { x: 0, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 0, y: 4, player: 0, count: 2 },   // x=0 edge, cap=3
+            { x: 8, y: 4, player: 0, count: 2 },   // x=8 edge, cap=3
+            // AI — inside fortress
+            { x: 4, y: 3, player: 1, count: 3 },   // interior, cap=4
+            { x: 3, y: 4, player: 1, count: 3 },   // interior, cap=4
+            { x: 5, y: 4, player: 1, count: 3 }    // interior, cap=4
+        ]
+    },
+
+    // ── LEVEL 24 ─────────────────────────────────────────────────────────
+    // THE BOWTIE — 8×8, two diagonal blocked triangles meeting at the center waist
+    //
+    // A 5-cell blocked triangle cuts the top-left corner.
+    // A mirrored 5-cell triangle cuts the bottom-right corner.
+    // The center waist (x=3-4, y=3-4) is the only battlefield connection.
+    // Both players start in opposite open corners — must cross the waist to win.
+    // Psychological goal: funnel tension, forced convergence at center.
+    // Difficulty: Hard.
+    //
+    //  □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □
+    //  ■ ■ □ □ □ □ □ □  ← top-left blocked triangle
+    //  ■ ■ ■ □ □ □ □ □
+    //  □ □ □ □ □ ■ ■ ■  ← bottom-right blocked triangle
+    //  □ □ □ □ □ □ ■ ■
+    //  □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □
+    {
+        id: 24,
+        name: "The Bowtie",
+        description: "Two open zones meet at a narrow waist. Cross or be trapped on your side!",
+        rows: 8, cols: 8,
+        blockedCells: [
+            // Top-left triangle
+            [0,2],[1,2],
+            [0,3],[1,3],[2,3],
+            // Bottom-right triangle
+            [5,4],[6,4],[7,4],
+            [6,5],[7,5]
+        ],
+        presetOrbs: [
+            // Player — top-right corner
+            { x: 7, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 6, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 7, y: 1, player: 0, count: 2 },   // x=7 edge, cap=3
+            // AI — bottom-left corner
+            { x: 0, y: 7, player: 1, count: 1 },   // corner, cap=2
+            { x: 0, y: 6, player: 1, count: 2 },   // x=0 edge, cap=3
+            { x: 1, y: 7, player: 1, count: 2 }    // y=7 edge, cap=3
+        ]
+    },
+
+    // ── LEVEL 25 ─────────────────────────────────────────────────────────
+    // THE FINAL STORM — 9×9, center island + four compass-arm walls
+    //
+    // A 3×3 dead island sits at center. Four arm walls extend from it toward
+    // each edge (2 cells each), creating a cross-shaped obstacle field.
+    // Chains must navigate around both the center island AND the four arms —
+    // producing the most complex routing of the entire campaign.
+    // Players start with 4 orbs each for an immediate explosive opening.
+    // Psychological goal: supreme chaos, hard-earned mastery, ultimate finale.
+    // Difficulty: Expert.
+    //
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ ■ ■ □ □ □  ← top arm
+    //  □ □ □ □ □ □ □ □ □
+    //  □ ■ □ ■ ■ ■ □ ■ □  ← left arm | center island | right arm
+    //  □ ■ □ ■ ■ ■ □ ■ □
+    //  □ ■ □ ■ ■ ■ □ ■ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ ■ ■ ■ □ □ □  ← bottom arm
+    //  □ □ □ □ □ □ □ □ □
+    {
+        id: 25,
+        dezvoltare: "final",
+        name: "The Final Storm",
+        description: "Dead center. Four arms. 4 starting orbs each. The ultimate chain reaction battle!",
+        rows: 9, cols: 9,
+        blockedCells: [
+            // Center 3×3 island
+            [3,3],[4,3],[5,3],
+            [3,4],[4,4],[5,4],
+            [3,5],[4,5],[5,5],
+            // Top arm (2 cells above island)
+            [4,1],[5,1],
+            // Bottom arm (below island)
+            [3,7],[4,7],[5,7],
+            // Left arm (left of island)
+            [1,3],[1,4],[1,5],
+            // Right arm (right of island)
+            [7,3],[7,4],[7,5]
+        ],
+        presetOrbs: [
+            // Player — bottom-left cluster (4 orbs)
+            { x: 0, y: 8, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 8, player: 0, count: 2 },   // y=8 edge, cap=3
+            { x: 0, y: 7, player: 0, count: 2 },   // x=0 edge, cap=3
+            { x: 1, y: 7, player: 0, count: 3 },   // interior, cap=4
+            // AI — top-right cluster (4 orbs)
+            { x: 8, y: 0, player: 1, count: 1 },   // corner, cap=2
+            { x: 7, y: 0, player: 1, count: 2 },   // y=0 edge, cap=3
+            { x: 8, y: 1, player: 1, count: 2 },   // x=8 edge, cap=3
+            { x: 7, y: 1, player: 1, count: 3 }    // interior, cap=4
+        ]
     }
 
 ];
