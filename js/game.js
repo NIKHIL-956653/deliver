@@ -5,7 +5,9 @@ import { capacity, neighbors, drawCell } from "./board.js";
 import { buildPlayerSettings } from "./player.js";
 import { makeAIMove, getProfessionalHint } from "./ai.js";
 import { spawnParticles, triggerShake, triggerFlash, triggerGlitch, triggerHeat, startCelebration } from "./fx.js";
-import { recordGameEnd, tryUnlockAchievement, loadData, saveTheme, getSavedTheme } from "./storage.js";
+import { recordGameEnd, tryUnlockAchievement, loadData, saveTheme, getSavedTheme,
+         isDailyCompleted, completeDailyChallenge, getDailyStreak,
+         saveLevelStars, getLevelStars, getAllLevelStars } from "./storage.js";
 import { SAGA_LEVELS } from "./levels.js";
 import { initMatrix, drawMatrix, stopMatrix, triggerMatrixFlash, matrixSettings } from "./matrix.js";
 import { initMagma, drawMagma, stopMagma, magmaSettings as lavaRainSettings } from "./magma.js";
@@ -37,6 +39,7 @@ let timeLimit = 120, timeLeft = timeLimit;
 let aiTimeout = null, hintsRemaining = 3, lastMove = null;
 let sagaCurrentLevel = 0;
 let sagaConsecutiveFails = 0;
+let isDailyMode = false;
 let hintsUsed = 0;
 let gameCount = parseInt(localStorage.getItem("gameCount") || "0", 10);
 
@@ -96,6 +99,10 @@ function init() {
   document.getElementById("sagaSkipBtn")?.addEventListener("click", () => {
     showInterstitialAd(() => skipSagaLevel());
   });
+
+  document.getElementById("dailyChallengeBtn")?.addEventListener("click", startDailyChallenge);
+
+  updateDailyUI();
 
   document.getElementById("sagaPlayerCountSelect")?.addEventListener("change", e => {
     const wrapper = document.getElementById("sagaAiDifficultyWrapper");
@@ -265,9 +272,11 @@ function startGame() {
 
 function backToMenu() {
   playing = false;
+  isDailyMode = false;
   clearTimeout(aiTimeout);
   stopTimer();
   closeModal();
+  updateDailyUI();
   document.getElementById("gameView")?.classList.remove("active");
   document.getElementById("mainMenu").style.display = "flex";
   boardEl.innerHTML = "";
@@ -275,6 +284,47 @@ function backToMenu() {
 
 function setupPlayers(count) {
   buildPlayerSettings(count, players, playerTypes, () => {}, () => {}, current);
+}
+
+// ── DAILY CHALLENGE ─────────────────────────────────────────────────────────
+function getDailyLevelIndex() {
+  const d = new Date();
+  const seed = d.getFullYear() * 366 + d.getMonth() * 31 + d.getDate();
+  const mixed = ((seed * 1664525 + 1013904223) & 0x7FFFFFFF);
+  return mixed % SAGA_LEVELS.length;
+}
+
+function updateDailyUI() {
+  const streak = getDailyStreak();
+  const completed = isDailyCompleted();
+  const streakEl = document.getElementById("streakDisplay");
+  const btn = document.getElementById("dailyChallengeBtn");
+  if (streakEl) streakEl.textContent = streak > 0 ? `🔥 ${streak} day streak!` : "";
+  if (btn) {
+    btn.disabled = completed;
+    btn.textContent = completed ? "✓ Done — Come back tomorrow!" : "⚡ Daily Challenge";
+  }
+}
+
+function startDailyChallenge() {
+  if (isDailyCompleted()) return;
+  isDailyMode = true;
+  mode = "saga";
+  sagaCurrentLevel = getDailyLevelIndex();
+  sagaConsecutiveFails = 0;
+  document.getElementById("mainMenu").style.display = "none";
+  document.getElementById("gameView").classList.add("active");
+  resetGame();
+}
+
+// ── COMBO FLASH ──────────────────────────────────────────────────────────────
+function showComboFlash(count) {
+  const el = document.getElementById("comboFlash");
+  if (!el) return;
+  el.classList.remove("active");
+  void el.offsetWidth; // force reflow to restart animation
+  el.textContent = `COMBO ×${count}!`;
+  el.classList.add("active");
 }
 
 function handleModeChange() {
@@ -500,9 +550,11 @@ async function resolveReactions() {
 
   const sleep = ms => new Promise(r => requestAnimationFrame(() => setTimeout(r, ms)));
   let loops = 0;
+  let waveCount = 0;
 
   // Increased loop limit slightly, but increased speed dramatically
   while (q.length && loops++ < 1000) {
+    waveCount++;
     updateScores();
 
     // Early exit: if only one player has orbs the game is decided — skip the rest of the animation
@@ -551,10 +603,12 @@ async function resolveReactions() {
     }
 
     findExplosions();
-    
+
     // ⭐ THE FIX: 50ms delay (Fast & Snappy)
     await sleep(50);
   }
+
+  if (waveCount >= 3) showComboFlash(waveCount);
 }
 
 function updateScores() {
@@ -812,9 +866,33 @@ function showSagaWin() {
   sagaConsecutiveFails = 0;
   playSound("win");
   startCelebration();
+
   const level = SAGA_LEVELS[sagaCurrentLevel];
+
+  // Calculate stars based on moves
+  const playable = level.rows * level.cols - level.blockedCells.length;
+  const stars = movesMade <= Math.floor(playable * 0.3) ? 3
+              : movesMade <= Math.floor(playable * 0.5) ? 2 : 1;
+  const prevBest = getLevelStars(level.id);
+  const newBest = saveLevelStars(level.id, stars);
+  const starsRow = "⭐".repeat(stars) + "☆".repeat(3 - stars);
+  const improved = newBest > prevBest && prevBest > 0 ? " 🆕 New best!" : "";
+
   modalTitle.textContent = `✓ Level ${sagaCurrentLevel + 1} Complete!`;
-  modalBody.innerHTML = `<strong>${level.name}</strong><br>Enemy eliminated! Well played!`;
+  modalBody.innerHTML = `
+    <strong>${level.name}</strong><br>Enemy eliminated!
+    <div style="font-size:1.5rem;margin:8px 0">${starsRow}</div>
+    <div style="font-size:0.8rem;color:#aaa">${movesMade} moves${improved}</div>
+  `;
+
+  // Daily challenge completion
+  if (isDailyMode) {
+    const streak = completeDailyChallenge();
+    modalBody.innerHTML += `<div style="color:#ffd700;margin-top:8px;font-weight:700">🔥 ${streak} day streak!</div>`;
+    isDailyMode = false;
+    updateDailyUI();
+  }
+
   const nextBtn = document.getElementById("modalNextBtn");
   if (nextBtn)
     nextBtn.style.display = sagaCurrentLevel < SAGA_LEVELS.length - 1 ? "inline-block" : "none";
@@ -850,6 +928,8 @@ function showLevelSelect() {
 
   const saved = parseInt(localStorage.getItem("sagaProgress") || "0", 10);
 
+  const allStars = getAllLevelStars();
+
   grid.innerHTML = "";
   SAGA_LEVELS.forEach((level, i) => {
     const btn = document.createElement("button");
@@ -859,17 +939,22 @@ function showLevelSelect() {
     const isCurrent   = i === saved;
     const isLocked    = i > saved;
 
-    if (isCompleted)   btn.classList.add("completed");
+    if (isCompleted)    btn.classList.add("completed");
     else if (isCurrent) btn.classList.add("current");
     else                btn.classList.add("locked");
 
     btn.disabled = isLocked;
 
     const icon = isLocked ? "🔒" : isCompleted ? "✓" : "▶";
+    const s = allStars[level.id] || 0;
+    const starsHtml = s > 0
+      ? `<span class="level-stars">${"⭐".repeat(s)}${"☆".repeat(3 - s)}</span>`
+      : "";
     btn.innerHTML = `
       <span class="level-icon">${icon}</span>
       <span class="level-num">LEVEL ${i + 1}</span>
       <span class="level-name">${level.name}</span>
+      ${starsHtml}
     `;
 
     if (!isLocked) btn.addEventListener("click", () => pickSagaLevel(i));

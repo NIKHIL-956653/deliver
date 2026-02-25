@@ -75,7 +75,62 @@ export function tryUnlockAchievement(id, title, desc) {
     return false;
 }
 
-// UI: Show Toast Notification
+// ── DAILY CHALLENGE ──────────────────────────────────────────────────────────
+function getTodayKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+export function isDailyCompleted() {
+    const data = JSON.parse(localStorage.getItem('neon_daily') || '{}');
+    return !!data[getTodayKey()];
+}
+
+export function completeDailyChallenge() {
+    const data = JSON.parse(localStorage.getItem('neon_daily') || '{}');
+    const today = getTodayKey();
+    if (data[today]) return data._streak || 1;
+    const d = new Date(); d.setDate(d.getDate() - 1);
+    const yesterday = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const newStreak = (data._lastDay === yesterday) ? (data._streak || 0) + 1 : 1;
+    data[today] = true;
+    data._streak = newStreak;
+    data._lastDay = today;
+    localStorage.setItem('neon_daily', JSON.stringify(data));
+    return newStreak;
+}
+
+export function getDailyStreak() {
+    const data = JSON.parse(localStorage.getItem('neon_daily') || '{}');
+    if (!data._lastDay) return 0;
+    const today = getTodayKey();
+    const d = new Date(); d.setDate(d.getDate() - 1);
+    const yesterday = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (data._lastDay === today || data._lastDay === yesterday) return data._streak || 0;
+    return 0;
+}
+
+// ── LEVEL STARS ──────────────────────────────────────────────────────────────
+export function saveLevelStars(levelId, stars) {
+    const data = JSON.parse(localStorage.getItem('neon_stars') || '{}');
+    const prev = data[levelId] || 0;
+    if (stars > prev) {
+        data[levelId] = stars;
+        localStorage.setItem('neon_stars', JSON.stringify(data));
+    }
+    return Math.max(prev, stars);
+}
+
+export function getLevelStars(levelId) {
+    const data = JSON.parse(localStorage.getItem('neon_stars') || '{}');
+    return data[levelId] || 0;
+}
+
+export function getAllLevelStars() {
+    return JSON.parse(localStorage.getItem('neon_stars') || '{}');
+}
+
+// ── UI: Show Toast Notification ──────────────────────────────────────────────
 function showAchievementToast(title, desc) {
     const container = document.getElementById('achievement-container');
     if (!container) return;
