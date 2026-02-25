@@ -82,7 +82,7 @@ function minimax(board, depth, alpha, beta, isMax, player, rows, cols) {
     const moves = [];
     for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
-            if (board[y][x].owner === -1 || board[y][x].owner === currentPlayer) moves.push({ x, y });
+            if (!board[y][x].isBlocked && (board[y][x].owner === -1 || board[y][x].owner === currentPlayer)) moves.push({ x, y });
         }
     }
 
@@ -115,7 +115,7 @@ export function makeAIMove(board, player, difficulty, rows, cols) {
     const valid = [];
     for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
-            if (board[y][x].owner === -1 || board[y][x].owner === player) valid.push({ x, y });
+            if (!board[y][x].isBlocked && (board[y][x].owner === -1 || board[y][x].owner === player)) valid.push({ x, y });
         }
     }
 
@@ -149,11 +149,11 @@ export function makeAIMove(board, player, difficulty, rows, cols) {
  */
 export function getProfessionalHint(board, player, rows, cols) {
     // Force a deeper lookahead for the "System Forecast"
-    const depth = 4; 
+    const depth = 4;
     const valid = [];
     for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
-            if (board[y][x].owner === -1 || board[y][x].owner === player) valid.push({ x, y });
+            if (!board[y][x].isBlocked && (board[y][x].owner === -1 || board[y][x].owner === player)) valid.push({ x, y });
         }
     }
 

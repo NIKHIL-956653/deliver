@@ -6,6 +6,7 @@ import { buildPlayerSettings } from "./player.js";
 import { makeAIMove, getProfessionalHint } from "./ai.js";
 import { spawnParticles, triggerShake, triggerFlash, triggerGlitch, triggerHeat, startCelebration } from "./fx.js";
 import { recordGameEnd, tryUnlockAchievement, loadData, saveTheme, getSavedTheme } from "./storage.js";
+import { SAGA_LEVELS } from "./levels.js";
 import { initMatrix, drawMatrix, stopMatrix, triggerMatrixFlash, matrixSettings } from "./matrix.js";
 import { initMagma, drawMagma, stopMagma, magmaSettings as lavaRainSettings } from "./magma.js";
 
@@ -27,12 +28,17 @@ const modalTitle = document.getElementById("modalTitle");
 const modalBody = document.getElementById("modalBody");
 const modalReplayBtn = document.getElementById("modalReplayBtn");
 const modalMenuBtn = document.getElementById("modalMenuBtn");
+const modalSkipBtn = document.getElementById("modalSkipBtn");
 
 let rows = 9, cols = 9, players = [], playerTypes = [];
 let current = 0, board = [], playing = true, firstMove = [], history = [];
 let scores = [], movesMade = 0, mode = "normal", timer = null;
 let timeLimit = 120, timeLeft = timeLimit;
 let aiTimeout = null, hintsRemaining = 3, lastMove = null;
+let sagaCurrentLevel = 0;
+let sagaConsecutiveFails = 0;
+let hintsUsed = 0;
+let gameCount = parseInt(localStorage.getItem("gameCount") || "0", 10);
 
 let cyberSettings = { scanlines: true };
 let localMagmaSettings = { lavaActive: true, heatActive: true };
@@ -55,6 +61,11 @@ function init() {
     document.getElementById("adModal").style.display = "none";
   });
 
+  document.getElementById("closeLevelSelectBtn")?.addEventListener("click", () => {
+    document.getElementById("levelSelectModal").style.display = "none";
+    backToMenu();
+  });
+
   playerCountSelect?.addEventListener("change", () =>
     setupPlayers(parseInt(playerCountSelect.value, 10))
   );
@@ -69,6 +80,17 @@ function init() {
   modalMenuBtn?.addEventListener("click", () => {
     closeModal();
     backToMenu();
+  });
+
+  document.getElementById("modalNextBtn")?.addEventListener("click", () => {
+    sagaCurrentLevel = Math.min(sagaCurrentLevel + 1, SAGA_LEVELS.length - 1);
+    closeModal();
+    resetGame();
+  });
+
+  modalSkipBtn?.addEventListener("click", () => {
+    closeModal();
+    showInterstitialAd(() => skipSagaLevel());
   });
 
   const themeSelect = $("#themeSelect");
@@ -193,13 +215,26 @@ function applyTheme(t) {
 }
 
 function startGame() {
-  if (!playerTypes || playerTypes.length === 0) {
-      const count = parseInt(playerCountSelect.value, 10) || 2;
-      setupPlayers(count);
-  }
+  gameCount++;
+  localStorage.setItem("gameCount", gameCount.toString());
 
   document.getElementById("mainMenu").style.display = "none";
   document.getElementById("gameView")?.classList.add("active");
+
+  if (mode === "saga") {
+    showLevelSelect();
+    return;
+  }
+
+  if (!playerTypes || playerTypes.length === 0) {
+    const count = parseInt(playerCountSelect.value, 10) || 2;
+    setupPlayers(count);
+  }
+
+  if (gameCount % 4 === 0) {
+    showInterstitialAd(() => resetGame());
+    return;
+  }
   resetGame();
 }
 
@@ -221,10 +256,36 @@ function handleModeChange() {
   mode = modeSelect.value;
   if (timerContainer)
     timerContainer.style.display = mode === "timeAttack" ? "inline-block" : "none";
+
+  const standardControls = document.getElementById("standardControls");
+  const sagaMenuInfo = document.getElementById("sagaMenuInfo");
+  const sagaControls = document.getElementById("sagaControls");
+
+  if (mode === "saga") {
+    if (standardControls) standardControls.style.display = "none";
+    if (sagaControls) sagaControls.style.display = "block";
+    if (sagaMenuInfo) sagaMenuInfo.style.display = "none";
+  } else {
+    if (standardControls) standardControls.style.display = "block";
+    if (sagaControls) sagaControls.style.display = "none";
+    if (sagaMenuInfo) sagaMenuInfo.style.display = "none";
+  }
 }
 
 function resetGame() {
   closeModal();
+
+  // Hide saga objective when not in saga mode
+  const sagaObj = document.getElementById("sagaObjective");
+  if (sagaObj && mode !== "saga") sagaObj.classList.remove("active");
+
+  if (mode === "saga") {
+    const level = SAGA_LEVELS[sagaCurrentLevel];
+    if (!level) { backToMenu(); return; }
+    initSagaLevel(level);
+    return;
+  }
+
   const [c, r] = gridSelect.value.split("x").map(Number);
   cols = c;
   rows = r;
@@ -235,12 +296,11 @@ function resetGame() {
   history = [];
   movesMade = 0;
 
-  // --- FIXED: Initialize cells correctly ---
   board = Array.from({ length: rows }, () =>
     Array.from({ length: cols }, () => ({
       owner: -1,
       count: 0,
-      isBlocked: false 
+      isBlocked: false
     }))
   );
 
@@ -270,9 +330,81 @@ function resetGame() {
   processTurn();
 }
 
+function initSagaLevel(level) {
+  rows = level.rows;
+  cols = level.cols;
+  current = 0;
+  playing = true;
+  movesMade = 0;
+  history = [];
+  lastMove = null;
+  hintsRemaining = 3;
+  hintsUsed = 0;
+
+  const aiDiff = document.getElementById("sagaAiDifficultySelect")?.value || "hard";
+
+  players = [
+    { name: "You", color: "#00ffcc" },
+    { name: "Enemy", color: "#ff4757" }
+  ];
+  playerTypes = [
+    { type: "human" },
+    { type: "ai", difficulty: aiDiff }
+  ];
+  scores = [0, 0];
+  firstMove = [false, false];
+
+  board = Array.from({ length: rows }, () =>
+    Array.from({ length: cols }, () => ({
+      owner: -1, count: 0, isBlocked: false
+    }))
+  );
+
+  for (const [bx, by] of level.blockedCells) {
+    if (board[by]?.[bx] !== undefined) board[by][bx].isBlocked = true;
+  }
+
+  for (const orb of level.presetOrbs) {
+    board[orb.y][orb.x].owner = orb.player;
+    board[orb.y][orb.x].count = orb.count;
+    firstMove[orb.player] = true; // mark as already placed (for elimination check)
+  }
+
+  boardEl.innerHTML = "";
+  boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
+
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const cell = document.createElement("button");
+      cell.className = "cell";
+      cell.addEventListener("click", () => handleMove(x, y));
+      boardEl.appendChild(cell);
+    }
+  }
+
+  updateHintCount();
+  updateScores();
+  updateStatus();
+  paintAll();
+
+  const sagaObj = document.getElementById("sagaObjective");
+  if (sagaObj) {
+    sagaObj.textContent = `⚡ LEVEL ${sagaCurrentLevel + 1}: ${level.name}`;
+    sagaObj.classList.add("active");
+  }
+
+  const hudMsg = document.getElementById("hudMessage");
+  if (hudMsg) {
+    hudMsg.textContent = `💀 ${level.description}`;
+    hudMsg.classList.add("active");
+    setTimeout(() => { hudMsg.textContent = ""; hudMsg.classList.remove("active"); }, 3000);
+  }
+}
+
 function handleMove(x, y) {
-  if (!playerTypes[current]) return; 
+  if (!playerTypes[current]) return;
   if (!playing || playerTypes[current].type === "ai") return;
+  if (board[y][x].isBlocked) return;
   if (board[y][x].owner !== -1 && board[y][x].owner !== current) return;
   makeMove(x, y);
 }
@@ -401,6 +533,16 @@ function updateScores() {
 }
 
 function updateStatus() {
+  if (mode === "saga") {
+    statusText.textContent = current === 0 ? "Your turn" : "Enemy thinking...";
+    turnBadge.style.background = players[current]?.color || "#00ffcc";
+    const sagaObj = document.getElementById("sagaObjective");
+    if (sagaObj?.classList.contains("active")) {
+      const level = SAGA_LEVELS[sagaCurrentLevel];
+      sagaObj.textContent = `⚡ LEVEL ${sagaCurrentLevel + 1}: ${level?.name}`;
+    }
+    return;
+  }
   if (players[current]) {
     statusText.textContent = `${players[current].name}'s turn`;
     turnBadge.style.background = players[current].color;
@@ -408,6 +550,23 @@ function updateStatus() {
 }
 
 function checkWin() {
+  if (mode === "saga") {
+    const aliveIndices = players.map((_, i) => i).filter(i => scores[i] > 0);
+    if (movesMade >= players.length && aliveIndices.length === 1) {
+      playing = false;
+      if (aliveIndices[0] === 0) {
+        const saved = parseInt(localStorage.getItem("sagaProgress") || "0", 10);
+        if (sagaCurrentLevel + 1 > saved)
+          localStorage.setItem("sagaProgress", (sagaCurrentLevel + 1).toString());
+        showSagaWin();
+      } else {
+        showSagaFail();
+      }
+      return true;
+    }
+    return false;
+  }
+
   const aliveIndices = players.map((_, i) => i).filter(i => scores[i] > 0);
 
   if (movesMade >= players.length && aliveIndices.length === 1) {
@@ -423,8 +582,8 @@ function checkWin() {
 function advanceTurn() {
   let loops = 0;
   do {
-      current = (current + 1) % players.length;
-      loops++;
+    current = (current + 1) % players.length;
+    loops++;
   } while (firstMove[current] && scores[current] === 0 && loops < players.length);
 
   updateStatus();
@@ -443,6 +602,29 @@ function processTurn() {
   const aiDelay = parseInt(document.getElementById("aiSpeedSelect")?.value || "300", 10);
   aiTimeout = setTimeout(() => {
     const diff = playerTypes[current].difficulty || "hard";
+
+    // Adaptive difficulty: more hints player used = higher chance AI picks a random (blind) move
+    if (mode === "saga") {
+      let blindChance = 0;
+      if (hintsUsed >= 11) blindChance = 0.85;
+      else if (hintsUsed >= 9) blindChance = 0.70;
+      else if (hintsUsed >= 6) blindChance = 0.50;
+      else if (hintsUsed >= 3) blindChance = 0.25;
+
+      if (blindChance > 0 && Math.random() < blindChance) {
+        const validMoves = [];
+        for (let y = 0; y < rows; y++)
+          for (let x = 0; x < cols; x++)
+            if (!board[y][x].isBlocked && (board[y][x].owner === -1 || board[y][x].owner === current))
+              validMoves.push({ x, y });
+        if (validMoves.length) {
+          const blindMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+          makeMove(blindMove.x, blindMove.y);
+          return;
+        }
+      }
+    }
+
     const move = makeAIMove(board, current, diff, rows, cols, players.length);
     if (move) makeMove(move.x, move.y);
   }, aiDelay);
@@ -471,6 +653,7 @@ function useHint() {
   if (!best) return;
 
   hintsRemaining--;
+  hintsUsed++;
   updateHintCount();
 
   const reason = getHintReason(best);
@@ -494,7 +677,7 @@ function useHint() {
 }
 
 function playFakeAd() {
-  hintsRemaining += 5;
+  hintsRemaining += 3;
   updateHintCount();
   document.getElementById("adModal").style.display = "none";
 }
@@ -562,6 +745,9 @@ function stopTimer() {
 
 function closeModal() {
   gameModal.style.display = "none";
+  const nextBtn = document.getElementById("modalNextBtn");
+  if (nextBtn) nextBtn.style.display = "none";
+  if (modalReplayBtn) modalReplayBtn.textContent = "Play Again";
 }
 
 function showGameOver(t, m, w) {
@@ -570,6 +756,115 @@ function showGameOver(t, m, w) {
   modalTitle.textContent = t;
   modalBody.innerHTML = m;
   gameModal.style.display = "flex";
+}
+
+function showSagaWin() {
+  sagaConsecutiveFails = 0;
+  playSound("win");
+  startCelebration();
+  const level = SAGA_LEVELS[sagaCurrentLevel];
+  modalTitle.textContent = `✓ Level ${sagaCurrentLevel + 1} Complete!`;
+  modalBody.innerHTML = `<strong>${level.name}</strong><br>Enemy eliminated! Well played!`;
+  const nextBtn = document.getElementById("modalNextBtn");
+  if (nextBtn)
+    nextBtn.style.display = sagaCurrentLevel < SAGA_LEVELS.length - 1 ? "inline-block" : "none";
+  if (modalSkipBtn) modalSkipBtn.style.display = "none";
+  if (modalReplayBtn) modalReplayBtn.textContent = "Retry";
+  gameModal.style.display = "flex";
+}
+
+function showSagaFail() {
+  sagaConsecutiveFails++;
+  modalTitle.textContent = "Defeated!";
+  modalBody.innerHTML = `The enemy eliminated all your orbs!<br>Try again?`;
+  if (modalReplayBtn) modalReplayBtn.textContent = "Try Again";
+  const isLastLevel = sagaCurrentLevel >= SAGA_LEVELS.length - 1;
+  if (modalSkipBtn)
+    modalSkipBtn.style.display = (sagaConsecutiveFails >= 2 && !isLastLevel) ? "block" : "none";
+  gameModal.style.display = "flex";
+}
+
+function skipSagaLevel() {
+  sagaConsecutiveFails = 0;
+  const saved = parseInt(localStorage.getItem("sagaProgress") || "0", 10);
+  if (sagaCurrentLevel + 1 > saved)
+    localStorage.setItem("sagaProgress", (sagaCurrentLevel + 1).toString());
+  sagaCurrentLevel = Math.min(sagaCurrentLevel + 1, SAGA_LEVELS.length - 1);
+  resetGame();
+}
+
+function showLevelSelect() {
+  const modal = document.getElementById("levelSelectModal");
+  const grid = document.getElementById("levelSelectGrid");
+  if (!modal || !grid) return;
+
+  const saved = parseInt(localStorage.getItem("sagaProgress") || "0", 10);
+
+  grid.innerHTML = "";
+  SAGA_LEVELS.forEach((level, i) => {
+    const btn = document.createElement("button");
+    btn.className = "level-card";
+
+    const isCompleted = i < saved;
+    const isCurrent   = i === saved;
+    const isLocked    = i > saved;
+
+    if (isCompleted)   btn.classList.add("completed");
+    else if (isCurrent) btn.classList.add("current");
+    else                btn.classList.add("locked");
+
+    btn.disabled = isLocked;
+
+    const icon = isLocked ? "🔒" : isCompleted ? "✓" : "▶";
+    btn.innerHTML = `
+      <span class="level-icon">${icon}</span>
+      <span class="level-num">LEVEL ${i + 1}</span>
+      <span class="level-name">${level.name}</span>
+    `;
+
+    if (!isLocked) btn.addEventListener("click", () => pickSagaLevel(i));
+    grid.appendChild(btn);
+  });
+
+  modal.style.display = "flex";
+}
+
+function pickSagaLevel(index) {
+  document.getElementById("levelSelectModal").style.display = "none";
+  sagaCurrentLevel = index;
+  sagaConsecutiveFails = 0;
+
+  if (gameCount % 4 === 0) {
+    showInterstitialAd(() => resetGame());
+    return;
+  }
+  resetGame();
+}
+
+function showInterstitialAd(callback) {
+  const modal = document.getElementById("interstitialModal");
+  const btn = document.getElementById("interstitialPlayBtn");
+  const bar = document.getElementById("interstitialBar");
+  if (!modal) { callback(); return; }
+
+  modal.style.display = "flex";
+  btn.disabled = true;
+  bar.style.transition = "none";
+  bar.style.width = "0%";
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      bar.style.transition = "width 5s linear";
+      bar.style.width = "100%";
+    });
+  });
+
+  setTimeout(() => { btn.disabled = false; }, 5000);
+
+  btn.onclick = () => {
+    modal.style.display = "none";
+    callback();
+  };
 }
 
 init();

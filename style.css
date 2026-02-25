@@ -379,3 +379,116 @@ body.theme-cyberpunk.hud-sharp .cell {
     from { opacity: 1; transform: scale(1); }
     to { opacity: 0.7; transform: scale(1.1); }
 }
+
+/* --- BLOCKED CELLS (WALLS) --- */
+.cell.blocked {
+    background: #060606 !important;
+    border: 2px solid #111 !important;
+    border-radius: 4px;
+    cursor: not-allowed;
+    pointer-events: none;
+    opacity: 0.35;
+    box-shadow: none !important;
+    animation: none !important;
+    transform: none !important;
+}
+body.theme-matrix .cell.blocked { background: rgba(0,5,0,0.85) !important; border-color: #001400 !important; }
+body.theme-cyberpunk .cell.blocked { background: rgba(8,4,8,0.85) !important; border-color: #1a041a !important; }
+body.theme-magma .cell.blocked { background: rgba(5,1,0,0.85) !important; border-color: #1a0300 !important; }
+
+/* --- SAGA OBJECTIVE HUD --- */
+#sagaObjective {
+    text-align: center;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #ffd700;
+    text-shadow: 0 0 8px rgba(255,215,0,0.7);
+    letter-spacing: 1px;
+    height: 20px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+#sagaObjective.active { opacity: 1; }
+
+/* --- SAGA MENU INFO --- */
+#sagaMenuInfo {
+    display: none;
+    color: #ffd700;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    padding: 8px;
+    border: 1px solid #ffd70055;
+    border-radius: 8px;
+    background: rgba(255,215,0,0.05);
+    margin-top: 8px;
+}
+
+/* --- LEVEL SELECT SCREEN --- */
+.level-select-content {
+    max-width: 520px;
+    width: 95%;
+    max-height: 88vh;
+    overflow-y: auto;
+}
+.level-select-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+}
+.level-card {
+    background: #111;
+    border: 2px solid var(--primary);
+    border-radius: 12px;
+    padding: 14px 8px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    color: #fff;
+    text-align: center;
+    font-family: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.level-card:hover:not(:disabled) {
+    transform: scale(1.06);
+    box-shadow: 0 0 18px var(--primary);
+}
+.level-card .level-icon { font-size: 1.3rem; }
+.level-card .level-num  { font-size: 0.65rem; color: #aaa; letter-spacing: 1px; }
+.level-card .level-name { font-size: 0.8rem; font-weight: 700; }
+.level-card.completed {
+    border-color: #00ffcc;
+    background: rgba(0, 255, 204, 0.07);
+}
+.level-card.current {
+    border-color: #ffd700;
+    background: rgba(255, 215, 0, 0.07);
+    box-shadow: 0 0 10px #ffd70066;
+}
+.level-card.locked {
+    border-color: #2a2a2a;
+    background: #080808;
+    color: #333;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+@media (max-width: 480px) {
+    .level-select-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* --- WATCH AD TO SKIP BUTTON --- */
+.modal-btn.skip-btn {
+    border-color: #ffd700;
+    color: #ffd700;
+    background: rgba(255, 215, 0, 0.07);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    font-size: 0.95rem;
+}
+.modal-btn.skip-btn:hover {
+    background: #ffd700;
+    color: #000;
+    box-shadow: 0 0 20px #ffd700;
+}
