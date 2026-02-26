@@ -801,6 +801,59 @@ body.skin-electric .orb::after {
     display: block; margin-top: 2px;
 }
 
+/* ── SAGA LEVEL INTRO OVERLAY ────────────────────────────────────────────── */
+.level-intro-overlay {
+    position: fixed; inset: 0; z-index: 5000;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+.level-intro-card {
+    text-align: center; padding: 36px 28px;
+    max-width: 340px; width: 88%;
+    animation: introFadeIn 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes introFadeIn {
+    from { opacity: 0; transform: scale(0.85) translateY(20px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.level-intro-badge {
+    font-size: 0.72rem; color: #00ffcc88; letter-spacing: 4px;
+    text-transform: uppercase; margin-bottom: 10px;
+}
+.level-intro-icon { font-size: 2.8rem; margin-bottom: 10px; }
+.level-intro-name {
+    font-size: 1.9rem; font-weight: 900; color: #00ffcc;
+    text-shadow: 0 0 24px #00ffcc66; margin-bottom: 14px; line-height: 1.2;
+}
+.level-intro-desc {
+    color: #aaa; font-size: 0.95rem; line-height: 1.55; margin-bottom: 30px;
+}
+.intro-start-btn {
+    background: #00ffcc; color: #000; border: none;
+    padding: 14px 44px; border-radius: 10px;
+    font-size: 1.1rem; font-weight: bold; cursor: pointer;
+    animation: introBtn 1.6s ease-in-out infinite;
+}
+@keyframes introBtn {
+    0%, 100% { box-shadow: 0 0 10px #00ffcc66; }
+    50%       { box-shadow: 0 0 28px #00ffcc; }
+}
+/* Boss level intro — red theme */
+.level-intro-overlay.boss-intro .level-intro-badge { color: #ff475788; }
+.level-intro-overlay.boss-intro .level-intro-name {
+    color: #ff4757; text-shadow: 0 0 24px #ff475766;
+}
+.level-intro-overlay.boss-intro .intro-start-btn {
+    background: #ff4757;
+    animation: introBossBtn 1.6s ease-in-out infinite;
+}
+@keyframes introBossBtn {
+    0%, 100% { box-shadow: 0 0 10px #ff475766; }
+    50%       { box-shadow: 0 0 28px #ff4757; }
+}
+
 /* ── MOBILE BOARD POLISH ─────────────────────────────────────────────────── */
 /* Push board to top (remove centering gap) and tighten HUD spacing on mobile */
 @media (max-width: 600px) {

@@ -564,6 +564,22 @@ function setCellSize(c, r) {
   document.documentElement.style.setProperty('--cell-h', finalH + 'px');
 }
 
+// ── SAGA LEVEL INTRO ──────────────────────────────────────────────────────────
+function showLevelIntro(level, levelIndex) {
+  const overlay = document.getElementById('levelIntroOverlay');
+  if (!overlay) return;
+  document.getElementById('introLevelNum').textContent = levelIndex + 1;
+  document.getElementById('introLevelName').textContent = level.name;
+  document.getElementById('introLevelDesc').textContent = level.description;
+  document.getElementById('introIcon').textContent = level.isBoss ? '💀' : '⚡';
+  if (level.isBoss) overlay.classList.add('boss-intro');
+  else overlay.classList.remove('boss-intro');
+  overlay.style.display = 'flex';
+  document.getElementById('introStartBtn').onclick = () => {
+    overlay.style.display = 'none';
+  };
+}
+
 // ── TUTORIAL ──────────────────────────────────────────────────────────────────
 let tutStep = 0;
 
@@ -764,12 +780,7 @@ function initSagaLevel(level) {
     sagaObj.classList.add("active");
   }
 
-  const hudMsg = document.getElementById("hudMessage");
-  if (hudMsg) {
-    hudMsg.textContent = `💀 ${level.description}`;
-    hudMsg.classList.add("active");
-    setTimeout(() => { hudMsg.textContent = ""; hudMsg.classList.remove("active"); }, 3000);
-  }
+  showLevelIntro(level, sagaCurrentLevel);
 }
 
 function handleMove(x, y) {
