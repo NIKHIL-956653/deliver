@@ -766,3 +766,36 @@ body.skin-electric .orb::after {
     .board { animation: none !important; }
     .cell.pulse { animation: none !important; }
 }
+
+/* ── TUTORIAL OVERLAY ────────────────────────────────────────────────────── */
+.tutorial-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.88);
+    z-index: 9000; display: flex; align-items: center; justify-content: center;
+}
+.tutorial-card {
+    background: #0a0a0a; border: 1px solid #00ffcc44;
+    border-radius: 16px; padding: 32px 24px; max-width: 340px; width: 90%;
+    text-align: center;
+}
+.tut-step { display: none; }
+.tut-step.active { display: block; }
+.tut-icon { font-size: 3rem; margin-bottom: 12px; }
+.tut-title { font-size: 1.3rem; color: #00ffcc; font-weight: bold; margin-bottom: 10px; }
+.tut-desc { color: #aaa; font-size: 0.95rem; line-height: 1.5; }
+.tut-dots { display: flex; justify-content: center; gap: 8px; margin: 20px 0 16px; }
+.tut-dot { width: 8px; height: 8px; border-radius: 50%; background: #333; transition: background 0.3s; }
+.tut-dot.active { background: #00ffcc; }
+.tut-actions { display: flex; gap: 10px; justify-content: center; }
+.tut-btn { padding: 10px 22px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.95rem; }
+.tut-btn.primary { background: #00ffcc; color: #000; font-weight: bold; }
+.tut-btn.secondary { background: transparent; color: #555; border: 1px solid #333; cursor: pointer; }
+
+/* ── BOSS LEVEL CARDS ────────────────────────────────────────────────────── */
+.level-card.boss { border-color: #ff4757 !important; background: rgba(255,71,87,0.06); }
+.level-card.boss .level-num { color: #ff4757; }
+.boss-tag {
+    font-size: 0.65rem; color: #ff4757;
+    background: rgba(255,71,87,0.15);
+    padding: 2px 6px; border-radius: 4px;
+    display: block; margin-top: 2px;
+}

@@ -556,11 +556,43 @@ function renderSkinSelector() {
 function setCellSize(c, r) {
   const availW = window.innerWidth - 32;
   const availH = window.innerHeight - 190;
-  // Width and height computed independently — cells can be taller than wide
   const cellW = Math.max(22, Math.min(52, Math.floor((availW - 4 * c - 12) / c)));
   const cellH = Math.max(22, Math.min(72, Math.floor((availH - 4 * r - 12) / r)));
+  // 6×6 stays square; 9×9 and 12×12 use non-square (taller) cells to fill the screen
+  const finalH = c <= 6 ? cellW : cellH;
   document.documentElement.style.setProperty('--cell-w', cellW + 'px');
-  document.documentElement.style.setProperty('--cell-h', cellH + 'px');
+  document.documentElement.style.setProperty('--cell-h', finalH + 'px');
+}
+
+// ── TUTORIAL ──────────────────────────────────────────────────────────────────
+let tutStep = 0;
+
+function showTutorial() {
+  if (localStorage.getItem('neon_tutorial_done')) return;
+  tutStep = 0;
+  const overlay = document.getElementById('tutorialOverlay');
+  if (!overlay) return;
+  overlay.style.display = 'flex';
+  updateTutStep();
+  document.getElementById('tutNextBtn')?.addEventListener('click', advanceTutorial);
+  document.getElementById('tutSkipBtn')?.addEventListener('click', closeTutorial);
+}
+
+function updateTutStep() {
+  document.querySelectorAll('.tut-step').forEach((el, i) => el.classList.toggle('active', i === tutStep));
+  document.querySelectorAll('.tut-dot').forEach((el, i) => el.classList.toggle('active', i === tutStep));
+  const nextBtn = document.getElementById('tutNextBtn');
+  if (nextBtn) nextBtn.textContent = tutStep === 2 ? "Let's Play! 🚀" : "Next ▶";
+}
+
+function advanceTutorial() {
+  if (tutStep < 2) { tutStep++; updateTutStep(); } else { closeTutorial(); }
+}
+
+function closeTutorial() {
+  localStorage.setItem('neon_tutorial_done', '1');
+  const overlay = document.getElementById('tutorialOverlay');
+  if (overlay) overlay.style.display = 'none';
 }
 
 function handleModeChange() {
@@ -645,6 +677,7 @@ function resetGame() {
   updateStatus();
   updateScores();
   paintAll();
+  showTutorial();
   if (mode === "timeAttack") {
     timeLeft = timeLimit;
     if (timeLeftSpan) timeLeftSpan.textContent = timeLeft;
@@ -1221,16 +1254,19 @@ function showLevelSelect() {
     else                btn.classList.add("locked");
 
     btn.disabled = isLocked;
+    if (level.isBoss) btn.classList.add("boss");
 
-    const icon = isLocked ? "🔒" : isCompleted ? "✓" : "▶";
+    const icon = isLocked ? "🔒" : isCompleted ? "✓" : level.isBoss ? "💀" : "▶";
     const s = allStars[level.id] || 0;
     const starsHtml = s > 0
       ? `<span class="level-stars">${"⭐".repeat(s)}${"☆".repeat(3 - s)}</span>`
       : "";
+    const bossTag = level.isBoss ? `<span class="boss-tag">💀 BOSS</span>` : "";
     btn.innerHTML = `
       <span class="level-icon">${icon}</span>
       <span class="level-num">LEVEL ${i + 1}</span>
       <span class="level-name">${level.name}</span>
+      ${bossTag}
       ${starsHtml}
     `;
 

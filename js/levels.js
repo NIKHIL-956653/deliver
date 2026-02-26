@@ -1012,6 +1012,68 @@ export const SAGA_LEVELS = [
             { x: 8, y: 1, player: 1, count: 2 },   // x=8 edge, cap=3
             { x: 7, y: 1, player: 1, count: 3 }    // interior, cap=4
         ]
+    },
+
+    // ── BOSS LEVELS ───────────────────────────────────────────────────────────
+    {
+        id: 101, isBoss: true,
+        name: "The Ambush",
+        description: "The AI controls the center. Break through before it cascades!",
+        rows: 8, cols: 8,
+        blockedCells: [],
+        presetOrbs: [
+            // Player — bottom-left corner
+            { x: 0, y: 7, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 7, player: 0, count: 2 },   // y=7 edge, cap=3
+            // AI — center cluster, near-critical
+            { x: 3, y: 3, player: 1, count: 3 },   // interior, cap=4
+            { x: 4, y: 3, player: 1, count: 3 },   // interior, cap=4
+            { x: 3, y: 4, player: 1, count: 3 },   // interior, cap=4
+            { x: 4, y: 4, player: 1, count: 3 },   // interior, cap=4
+            { x: 5, y: 4, player: 1, count: 2 },   // interior, cap=4
+        ]
+    },
+    {
+        id: 102, isBoss: true,
+        name: "Iron Fortress",
+        description: "Walls divide the battlefield. Seize the corridors!",
+        rows: 9, cols: 9,
+        blockedCells: [[4,1],[4,2],[4,3],[4,5],[4,6],[4,7]],
+        presetOrbs: [
+            // Player — top-left cluster
+            { x: 0, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 0, y: 1, player: 0, count: 2 },   // x=0 edge, cap=3
+            // AI — right zone, upper and lower, near-critical
+            { x: 6, y: 2, player: 1, count: 3 },   // interior, cap=4
+            { x: 7, y: 2, player: 1, count: 3 },   // interior, cap=4
+            { x: 8, y: 2, player: 1, count: 2 },   // x=8 edge, cap=3
+            { x: 6, y: 6, player: 1, count: 3 },   // interior, cap=4
+            { x: 7, y: 6, player: 1, count: 3 },   // interior, cap=4
+            { x: 8, y: 6, player: 1, count: 2 },   // x=8 edge, cap=3
+        ]
+    },
+    {
+        id: 103, isBoss: true,
+        name: "Singularity",
+        description: "The final test. The AI is everywhere. Dominate or fall.",
+        rows: 9, cols: 9,
+        blockedCells: [],
+        presetOrbs: [
+            // Player — bottom-left cluster
+            { x: 0, y: 8, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 8, player: 0, count: 2 },   // y=8 edge, cap=3
+            { x: 0, y: 7, player: 0, count: 2 },   // x=0 edge, cap=3
+            // AI — spread across entire board, all near-critical
+            { x: 2, y: 2, player: 1, count: 3 },   // interior, cap=4
+            { x: 6, y: 2, player: 1, count: 3 },   // interior, cap=4
+            { x: 4, y: 4, player: 1, count: 3 },   // interior, cap=4
+            { x: 2, y: 6, player: 1, count: 3 },   // interior, cap=4
+            { x: 6, y: 6, player: 1, count: 3 },   // interior, cap=4
+            { x: 8, y: 0, player: 1, count: 1 },   // corner, cap=2
+            { x: 8, y: 4, player: 1, count: 2 },   // x=8 edge, cap=3
+            { x: 4, y: 8, player: 1, count: 2 },   // y=8 edge, cap=3
+        ]
     }
 
 ];

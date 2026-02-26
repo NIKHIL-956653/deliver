@@ -269,6 +269,35 @@
 
   <div id="achievement-container" aria-live="polite" style="position:fixed; top:20px; right:20px; z-index:9999; display:flex; flex-direction:column; gap:8px;"></div>
 
+  <div id="tutorialOverlay" class="tutorial-overlay" style="display:none;">
+    <div class="tutorial-card">
+      <div id="tutStep1" class="tut-step active">
+        <div class="tut-icon">💥</div>
+        <div class="tut-title">Place Orbs</div>
+        <div class="tut-desc">Tap any empty cell (or your own) to place an orb. Cells have a capacity — corners hold 2, edges hold 3, interior holds 4.</div>
+      </div>
+      <div id="tutStep2" class="tut-step">
+        <div class="tut-icon">⛓️</div>
+        <div class="tut-title">Chain Reaction!</div>
+        <div class="tut-desc">When a cell reaches capacity it EXPLODES — orbs fly to neighbors and convert them to your color. Chains cascade!</div>
+      </div>
+      <div id="tutStep3" class="tut-step">
+        <div class="tut-icon">🏆</div>
+        <div class="tut-title">Dominate the Grid</div>
+        <div class="tut-desc">Eliminate all enemy orbs to win. Use 💡 hints when stuck — you get 3 free hints each game!</div>
+      </div>
+      <div class="tut-dots">
+        <span class="tut-dot active"></span>
+        <span class="tut-dot"></span>
+        <span class="tut-dot"></span>
+      </div>
+      <div class="tut-actions">
+        <button id="tutNextBtn" class="tut-btn primary">Next ▶</button>
+        <button id="tutSkipBtn" class="tut-btn secondary">Skip</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="js/game.js"></script>
 
   <script>
