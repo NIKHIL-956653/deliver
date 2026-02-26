@@ -12,14 +12,16 @@
 }
 
 /* --- BASE STYLES --- */
-:root { 
-    --cell: 62px; 
+:root {
+    --cell: 62px;
     --cell-size: 60px;
-    --gap: 6px; 
+    --cell-w: 60px;
+    --cell-h: 60px;
+    --gap: 6px;
     --glow: #ff4757; --primary: #47f2ff;
-    --board-bg: #0b0b0b; --cell-bg: #151515; 
+    --board-bg: #0b0b0b; --cell-bg: #151515;
     --border-color: #ffffff22; --shadow-color: #000000;
-    --matrix-green: #00ff41; 
+    --matrix-green: #00ff41;
 }
 
 /* --- THEMES --- */
@@ -185,12 +187,12 @@ select, .btn, input[type="color"] { background: #101318; color: #eaf2ff; border:
 }
 @keyframes boardPulse { 0%,100%{box-shadow:0 0 16px var(--glow);} 50%{box-shadow:0 0 34px var(--glow);} }
 
-.cell { 
-    position: relative; width: var(--cell-size, 50px); height: var(--cell-size, 50px); 
-    min-width: 0; min-height: 0; border-radius: 14px; background: var(--cell-bg); 
-    border: 2px solid var(--border-color); display: grid; place-items: center; cursor: pointer; 
-    transition: border-color .25s ease, box-shadow .25s ease, background-color 0.3s, clip-path 0.4s; 
-    contain: layout style paint; 
+.cell {
+    position: relative; width: var(--cell-w, 50px); height: var(--cell-h, 50px);
+    min-width: 0; min-height: 0; border-radius: 14px; background: var(--cell-bg);
+    border: 2px solid var(--border-color); display: grid; place-items: center; cursor: pointer;
+    transition: border-color .25s ease, box-shadow .25s ease, background-color 0.3s, clip-path 0.4s;
+    contain: layout style paint;
 }
 
 /* CYBERPUNK HUD SHARP TOPOLOGY */
@@ -756,4 +758,11 @@ body.skin-electric .orb::after {
 @keyframes elec-pulse {
     0%   { opacity: 0.7; transform: scale(0.97); }
     100% { opacity: 1; transform: scale(1.03); }
+}
+
+/* ── MOBILE PERFORMANCE ──────────────────────────────────────────────────── */
+/* Disable expensive continuous animations on phones to prevent lag */
+@media (max-width: 600px) {
+    .board { animation: none !important; }
+    .cell.pulse { animation: none !important; }
 }

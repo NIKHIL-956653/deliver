@@ -532,12 +532,13 @@ function renderSkinSelector() {
 
 // ── RESPONSIVE CELL SIZE ──────────────────────────────────────────────────────
 function setCellSize(c, r) {
-  const availW = window.innerWidth - 32;          // 16px side padding each side
-  const availH = window.innerHeight - 190;        // approx header + hud + padding
-  const byW = Math.floor((availW - 4 * c - 12) / c);
-  const byH = Math.floor((availH - 4 * r - 12) / r);
-  const size = Math.max(22, Math.min(60, byW, byH));
-  document.documentElement.style.setProperty('--cell-size', size + 'px');
+  const availW = window.innerWidth - 32;
+  const availH = window.innerHeight - 190;
+  // Width and height computed independently — cells can be taller than wide
+  const cellW = Math.max(22, Math.min(52, Math.floor((availW - 4 * c - 12) / c)));
+  const cellH = Math.max(22, Math.min(72, Math.floor((availH - 4 * r - 12) / r)));
+  document.documentElement.style.setProperty('--cell-w', cellW + 'px');
+  document.documentElement.style.setProperty('--cell-h', cellH + 'px');
 }
 
 function handleModeChange() {
@@ -605,7 +606,7 @@ function resetGame() {
   );
 
   boardEl.innerHTML = "";
-  boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
+  boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell-w))`;
 
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
@@ -686,7 +687,7 @@ function initSagaLevel(level) {
   }
 
   boardEl.innerHTML = "";
-  boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
+  boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell-w))`;
 
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
