@@ -558,8 +558,8 @@ function setCellSize(c, r) {
   const availH = window.innerHeight - 190;
   const cellW = Math.max(22, Math.min(52, Math.floor((availW - 4 * c - 12) / c)));
   const cellH = Math.max(22, Math.min(72, Math.floor((availH - 4 * r - 12) / r)));
-  // 6×6 stays square; 9×9 and 12×12 use non-square (taller) cells to fill the screen
-  const finalH = c <= 6 ? cellW : cellH;
+  // 6×6 stays square; 9×9/12×12 can be taller but capped at 1.25x to prevent pill shapes
+  const finalH = c <= 6 ? cellW : Math.min(cellH, Math.floor(cellW * 1.25));
   document.documentElement.style.setProperty('--cell-w', cellW + 'px');
   document.documentElement.style.setProperty('--cell-h', finalH + 'px');
 }

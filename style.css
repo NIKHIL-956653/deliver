@@ -189,7 +189,7 @@ select, .btn, input[type="color"] { background: #101318; color: #eaf2ff; border:
 
 .cell {
     position: relative; width: var(--cell-w, 50px); height: var(--cell-h, 50px);
-    min-width: 0; min-height: 0; border-radius: 14px; background: var(--cell-bg);
+    min-width: 0; min-height: 0; border-radius: min(10px, calc(var(--cell-w, 50px) * 0.22)); background: var(--cell-bg);
     border: 2px solid var(--border-color); display: grid; place-items: center; cursor: pointer;
     transition: border-color .25s ease, box-shadow .25s ease, background-color 0.3s, clip-path 0.4s;
     contain: layout style paint;
@@ -798,4 +798,11 @@ body.skin-electric .orb::after {
     background: rgba(255,71,87,0.15);
     padding: 2px 6px; border-radius: 4px;
     display: block; margin-top: 2px;
+}
+
+/* ── MOBILE BOARD POLISH ─────────────────────────────────────────────────── */
+/* Push board to top (remove centering gap) and tighten HUD spacing on mobile */
+@media (max-width: 600px) {
+    .board-container { align-items: flex-start; padding: 4px; }
+    .hud-container { margin-bottom: 4px; }
 }
