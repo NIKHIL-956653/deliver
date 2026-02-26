@@ -79,6 +79,13 @@ export function getXPInfo() {
     return { xp, rankName, rankIdx, xpInRank, xpToNext, isMax };
 }
 
+export function saveSkin(skin) {
+    localStorage.setItem('neon_skin', skin || 'default');
+}
+export function getSavedSkin() {
+    return localStorage.getItem('neon_skin') || 'default';
+}
+
 export function addXP(amount) {
     const data = loadData();
     const prevXP = data.settings.xp || 0;

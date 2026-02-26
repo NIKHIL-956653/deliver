@@ -8,7 +8,7 @@ import { spawnParticles, triggerShake, triggerFlash, triggerGlitch, triggerHeat,
 import { recordGameEnd, tryUnlockAchievement, loadData, saveTheme, getSavedTheme,
          isDailyCompleted, completeDailyChallenge, getDailyStreak,
          saveLevelStars, getLevelStars, getAllLevelStars,
-         addXP, getXPInfo } from "./storage.js";
+         addXP, getXPInfo, saveSkin, getSavedSkin } from "./storage.js";
 import { SAGA_LEVELS } from "./levels.js";
 import { initMatrix, drawMatrix, stopMatrix, triggerMatrixFlash, matrixSettings } from "./matrix.js";
 import { initMagma, drawMagma, stopMagma, magmaSettings as lavaRainSettings } from "./magma.js";
@@ -105,6 +105,25 @@ function init() {
 
   updateDailyUI();
   updateXPBar();
+
+  // Stats + achievements
+  document.getElementById("statsBtn")?.addEventListener("click", openStatsModal);
+  document.getElementById("closeStatsBtn")?.addEventListener("click", () => {
+    document.getElementById("statsModal").style.display = "none";
+  });
+  document.getElementById("statsToAchievementsBtn")?.addEventListener("click", () => {
+    document.getElementById("statsModal").style.display = "none";
+    openAchievementModal();
+  });
+  document.getElementById("closeAchievementBtn")?.addEventListener("click", () => {
+    document.getElementById("achievementModal").style.display = "none";
+  });
+
+  // Also open achievements from menu footer via a shortcut on the stats modal
+  // Orb skin: load saved + render selector
+  const savedSkin = getSavedSkin();
+  if (savedSkin && savedSkin !== "default") document.body.classList.add(savedSkin);
+  renderSkinSelector();
 
   window.addEventListener("resize", () => {
     if (document.getElementById("gameView")?.classList.contains("active")) {
@@ -348,7 +367,10 @@ function showComboFlash(count) {
 function grantXP(amount) {
   const result = addXP(amount);
   updateXPBar();
-  if (result.leveledUp) showRankUpToast(result.rankName);
+  if (result.leveledUp) {
+    showRankUpToast(result.rankName);
+    renderSkinSelector(); // refresh locked/unlocked state
+  }
 }
 
 function showRankUpToast(rankName) {
@@ -384,6 +406,128 @@ function updateXPBar() {
     if (amtEl)  amtEl.textContent  = `${info.xpInRank} / ${info.xpToNext} XP`;
     if (fillEl) fillEl.style.width = `${Math.min(100, (info.xpInRank / info.xpToNext) * 100)}%`;
   }
+}
+
+// ── ACHIEVEMENTS DATA ─────────────────────────────────────────────────────────
+const ALL_ACHIEVEMENTS = [
+  { id: "first_win",   icon: "🏆", title: "First Victory!",   desc: "Win your very first game"                },
+  { id: "speed_win",   icon: "⚡", title: "Speed Demon!",     desc: "Win a Time Attack match"                 },
+  { id: "saga_start",  icon: "⚔️", title: "Chain Beginner",   desc: "Complete your first saga level"          },
+  { id: "saga_5",      icon: "🌟", title: "Rising Star",      desc: "Complete saga level 5"                   },
+  { id: "saga_15",     icon: "💎", title: "Chain Master",     desc: "Complete saga level 15"                  },
+  { id: "saga_all",    icon: "👑", title: "The Legend",       desc: "Complete all 25 saga levels!"            },
+  { id: "three_stars", icon: "⭐", title: "Perfectionist",    desc: "Earn 3 stars on a saga level"            },
+  { id: "no_hints",    icon: "🧠", title: "Pure Skill",       desc: "Beat a saga level without using hints"   },
+  { id: "combo_5",     icon: "💥", title: "Chain Reaction!",  desc: "Trigger a 5+ wave combo"                 },
+  { id: "combo_10",    icon: "☢️", title: "Nuclear!",         desc: "Trigger a 10+ wave chain reaction"       },
+  { id: "streak_3",    icon: "🔥", title: "On a Roll!",       desc: "3-day daily challenge streak"            },
+  { id: "streak_7",    icon: "💫", title: "Dedicated",        desc: "7-day daily challenge streak"            },
+];
+
+// ── STATS MODAL ───────────────────────────────────────────────────────────────
+function openStatsModal() {
+  const data = loadData();
+  const xpInfo = getXPInfo();
+  const streak = getDailyStreak();
+  const totalWins = Object.values(data.stats.wins).reduce((a, b) => a + b, 0);
+  const starsData = JSON.parse(localStorage.getItem('neon_stars') || '{}');
+  const totalStars = Object.values(starsData).reduce((a, b) => a + b, 0);
+  const perfLevels = Object.values(starsData).filter(s => s === 3).length;
+  const achCount = data.achievements.length;
+
+  document.getElementById("statsBody").innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-value">${xpInfo.rankName}</div>
+        <div class="stat-label">Rank</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">${xpInfo.xp}</div>
+        <div class="stat-label">Total XP</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">${data.stats.matches}</div>
+        <div class="stat-label">Games Played</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">${totalWins}</div>
+        <div class="stat-label">AI Wins</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">${streak > 0 ? `🔥 ${streak}` : "—"}</div>
+        <div class="stat-label">Daily Streak</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">${totalStars} ⭐</div>
+        <div class="stat-label">Stars Earned</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">${perfLevels}</div>
+        <div class="stat-label">Perfect (3★)</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">${achCount} / ${ALL_ACHIEVEMENTS.length}</div>
+        <div class="stat-label">Achievements</div>
+      </div>
+    </div>
+  `;
+  document.getElementById("statsModal").style.display = "flex";
+}
+
+// ── ACHIEVEMENT GALLERY ───────────────────────────────────────────────────────
+function openAchievementModal() {
+  const unlocked = loadData().achievements;
+  const grid = document.getElementById("achievementGrid");
+  grid.innerHTML = "";
+
+  ALL_ACHIEVEMENTS.forEach(a => {
+    const isUnlocked = unlocked.includes(a.id);
+    const card = document.createElement("div");
+    card.className = `ach-card ${isUnlocked ? "unlocked" : "locked"}`;
+    card.innerHTML = `
+      <div class="ach-icon">${isUnlocked ? a.icon : "🔒"}</div>
+      <div class="ach-text">
+        <div class="ach-title">${a.title}</div>
+        <div class="ach-desc">${isUnlocked ? a.desc : "???"}</div>
+      </div>
+      ${isUnlocked ? '<div class="ach-badge">✓</div>' : ""}
+    `;
+    grid.appendChild(card);
+  });
+
+  document.getElementById("achievementModal").style.display = "flex";
+}
+
+// ── ORB SKINS ─────────────────────────────────────────────────────────────────
+const SKINS = [
+  { id: "default",  label: "Classic",  preview: "🔵", minRank: 0 },
+  { id: "skin-fire",  label: "Fire",   preview: "🔴", minRank: 1 },  // Soldier
+  { id: "skin-ice",   label: "Ice",    preview: "🩵", minRank: 2 },  // Veteran
+  { id: "skin-electric", label: "Electric", preview: "💚", minRank: 3 }, // Pro
+];
+const RANK_NAMES = ["Rookie","Soldier","Veteran","Pro","Elite","Master","Legend"];
+
+function applySkin(skinId) {
+  document.body.classList.remove("skin-fire", "skin-ice", "skin-electric");
+  if (skinId && skinId !== "default") document.body.classList.add(skinId);
+  saveSkin(skinId);
+  renderSkinSelector(); // refresh active state
+}
+
+function renderSkinSelector() {
+  const container = document.getElementById("skinSelector");
+  if (!container) return;
+  const currentSkin = getSavedSkin();
+  const rankIdx = getXPInfo().rankIdx;
+  container.innerHTML = "";
+  SKINS.forEach(s => {
+    const locked = rankIdx < s.minRank;
+    const btn = document.createElement("button");
+    btn.className = `skin-btn${s.id === currentSkin ? " active" : ""}${locked ? " locked" : ""}`;
+    btn.innerHTML = `<span class="skin-preview">${s.preview}</span>${s.label}${locked ? `<br><span style="font-size:0.6rem;color:#888">Req: ${RANK_NAMES[s.minRank]}</span>` : ""}`;
+    if (!locked) btn.addEventListener("click", () => applySkin(s.id));
+    container.appendChild(btn);
+  });
 }
 
 // ── RESPONSIVE CELL SIZE ──────────────────────────────────────────────────────

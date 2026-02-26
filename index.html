@@ -139,6 +139,11 @@
             </select>
         </div>
 
+        <div class="system-controls" style="display:block; margin-top:10px;">
+            <div class="sidebar-header">ORB SKIN</div>
+            <div id="skinSelector" class="skin-selector"></div>
+        </div>
+
         <div id="matrixSidebarControls" class="system-controls" style="display: none;">
             <div class="sidebar-header">SYSTEM CONTROLS</div>
             <button id="toggleRain" class="matrix-btn active">RAIN: ON</button>
@@ -243,9 +248,22 @@
 
   <div id="statsModal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
-      <h2 class="modal-title">Career Stats</h2>
+      <h2 class="modal-title">📊 Career Stats</h2>
       <div id="statsBody" class="modal-body"></div>
-      <button id="closeStatsBtn" class="modal-btn primary">Close</button>
+      <div class="modal-actions">
+        <button id="statsToAchievementsBtn" class="modal-btn secondary">🏆 Achievements</button>
+        <button id="closeStatsBtn" class="modal-btn primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="achievementModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content achievement-modal-content">
+      <h2 class="modal-title">🏆 Achievements</h2>
+      <div id="achievementGrid" class="achievement-grid"></div>
+      <div class="modal-actions" style="margin-top:12px;">
+        <button id="closeAchievementBtn" class="modal-btn primary">Close</button>
+      </div>
     </div>
   </div>
 
