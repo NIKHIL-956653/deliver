@@ -106,6 +106,12 @@ function init() {
   updateDailyUI();
   updateXPBar();
 
+  window.addEventListener("resize", () => {
+    if (document.getElementById("gameView")?.classList.contains("active")) {
+      setCellSize(cols, rows);
+    }
+  });
+
   document.getElementById("sagaPlayerCountSelect")?.addEventListener("change", e => {
     const wrapper = document.getElementById("sagaAiDifficultyWrapper");
     if (wrapper) wrapper.style.display = e.target.value === "ai" ? "" : "none";
@@ -380,6 +386,16 @@ function updateXPBar() {
   }
 }
 
+// ── RESPONSIVE CELL SIZE ──────────────────────────────────────────────────────
+function setCellSize(c, r) {
+  const availW = window.innerWidth - 32;          // 16px side padding each side
+  const availH = window.innerHeight - 190;        // approx header + hud + padding
+  const byW = Math.floor((availW - 4 * c - 12) / c);
+  const byH = Math.floor((availH - 4 * r - 12) / r);
+  const size = Math.max(22, Math.min(60, byW, byH));
+  document.documentElement.style.setProperty('--cell-size', size + 'px');
+}
+
 function handleModeChange() {
   mode = modeSelect.value;
   if (timerContainer)
@@ -428,6 +444,7 @@ function resetGame() {
   const [c, r] = gridSelect.value.split("x").map(Number);
   cols = c;
   rows = r;
+  setCellSize(cols, rows);
   current = 0;
   playing = true;
 
@@ -472,6 +489,7 @@ function resetGame() {
 function initSagaLevel(level) {
   rows = level.rows;
   cols = level.cols;
+  setCellSize(cols, rows);
   current = 0;
   playing = true;
   movesMade = 0;

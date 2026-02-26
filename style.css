@@ -567,6 +567,17 @@ body.theme-magma .cell.blocked { background: rgba(5,1,0,0.85) !important; border
     100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
 }
 
+/* ── SAGA SKIP BUTTON (compact, doesn't block board) ─────────────────────── */
+#sagaSkipBtn {
+    align-self: center !important;
+    width: fit-content !important;
+    font-size: 0.75rem !important;
+    padding: 3px 10px !important;
+    margin-top: 2px !important;
+    opacity: 0.75;
+}
+#sagaSkipBtn:hover { opacity: 1; }
+
 /* ── XP BAR ──────────────────────────────────────────────────────────────── */
 .xp-bar-section {
     width: 100%;
