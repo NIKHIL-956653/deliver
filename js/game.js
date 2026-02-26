@@ -38,6 +38,7 @@ let current = 0, board = [], playing = true, firstMove = [], history = [];
 let scores = [], movesMade = 0, mode = "normal", timer = null;
 let timeLimit = 120, timeLeft = timeLimit;
 let aiTimeout = null, hintsRemaining = 3, lastMove = null;
+let aiWorker = null, aiMoveId = 0;
 let sagaCurrentLevel = 0;
 let sagaConsecutiveFails = 0;
 let isDailyMode = false;
@@ -105,6 +106,27 @@ function init() {
 
   updateDailyUI();
   updateXPBar();
+
+  // ── AI WEB WORKER ─────────────────────────────────────────────────────────
+  try {
+    aiWorker = new Worker('./js/ai.worker.js', { type: 'module' });
+    aiWorker.onmessage = ({ data }) => {
+      const { move, id } = data;
+      // Ignore stale responses (e.g. player went back to menu mid-computation)
+      if (id !== aiMoveId) return;
+      if (move && playing && playerTypes[current]?.type === 'ai') {
+        makeMove(move.x, move.y);
+      }
+    };
+    aiWorker.onerror = (err) => {
+      console.warn('AI worker error, falling back to main thread:', err);
+      aiWorker = null; // disable worker, processTurn will fall back
+    };
+  } catch (e) {
+    console.warn('Web Workers not supported, using main thread AI:', e);
+    aiWorker = null;
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   // Stats + achievements
   document.getElementById("statsBtn")?.addEventListener("click", openStatsModal);
@@ -951,8 +973,15 @@ function processTurn() {
       }
     }
 
-    const move = makeAIMove(board, current, diff, rows, cols, players.length);
-    if (move) makeMove(move.x, move.y);
+    if (aiWorker) {
+      // Off-thread: worker computes move on a separate CPU core, UI stays smooth
+      const id = ++aiMoveId;
+      aiWorker.postMessage({ board, current, difficulty: diff, rows, cols, playerCount: players.length, id });
+    } else {
+      // Fallback: compute on main thread (older browsers)
+      const move = makeAIMove(board, current, diff, rows, cols, players.length);
+      if (move) makeMove(move.x, move.y);
+    }
   }, aiDelay);
 }
 
