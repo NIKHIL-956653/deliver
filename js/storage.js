@@ -1,10 +1,30 @@
 // js/storage.js
 const STORAGE_KEY = 'neon_chain_reaction_v1';
 
+// ── XP RANKS ─────────────────────────────────────────────────────────────────
+const RANKS = [
+    { name: "Rookie",   xp: 0 },
+    { name: "Soldier",  xp: 200 },
+    { name: "Veteran",  xp: 500 },
+    { name: "Pro",      xp: 1000 },
+    { name: "Elite",    xp: 2000 },
+    { name: "Master",   xp: 4000 },
+    { name: "Legend",   xp: 7000 },
+];
+
+function getRankIndex(xp) {
+    let r = 0;
+    for (let i = 0; i < RANKS.length; i++) {
+        if (xp >= RANKS[i].xp) r = i;
+    }
+    return r;
+}
+
 // Default State (Now includes settings for Theme)
 const defaultData = {
     settings: {
-        theme: 'default' // Default theme
+        theme: 'default',
+        xp: 0
     },
     stats: {
         matches: 0,
@@ -46,6 +66,34 @@ export function getSavedTheme() {
     return data.settings.theme;
 }
 // ----------------------------
+
+// ── XP FUNCTIONS ──────────────────────────────────────────────────────────────
+export function getXPInfo() {
+    const data = loadData();
+    const xp = data.settings.xp || 0;
+    const rankIdx = getRankIndex(xp);
+    const rankName = RANKS[rankIdx].name;
+    const xpInRank = xp - RANKS[rankIdx].xp;
+    const xpToNext = rankIdx < RANKS.length - 1 ? RANKS[rankIdx + 1].xp - RANKS[rankIdx].xp : null;
+    const isMax = rankIdx === RANKS.length - 1;
+    return { xp, rankName, rankIdx, xpInRank, xpToNext, isMax };
+}
+
+export function addXP(amount) {
+    const data = loadData();
+    const prevXP = data.settings.xp || 0;
+    const prevRankIdx = getRankIndex(prevXP);
+    data.settings.xp = prevXP + amount;
+    saveData(data);
+    const newRankIdx = getRankIndex(data.settings.xp);
+    return {
+        xp: data.settings.xp,
+        rankName: RANKS[newRankIdx].name,
+        prevRankName: RANKS[prevRankIdx].name,
+        leveledUp: newRankIdx > prevRankIdx
+    };
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Update Stats after a game
 export function recordGameEnd(winnerIndex, aiDifficulty) {

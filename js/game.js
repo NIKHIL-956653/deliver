@@ -7,7 +7,8 @@ import { makeAIMove, getProfessionalHint } from "./ai.js";
 import { spawnParticles, triggerShake, triggerFlash, triggerGlitch, triggerHeat, startCelebration } from "./fx.js";
 import { recordGameEnd, tryUnlockAchievement, loadData, saveTheme, getSavedTheme,
          isDailyCompleted, completeDailyChallenge, getDailyStreak,
-         saveLevelStars, getLevelStars, getAllLevelStars } from "./storage.js";
+         saveLevelStars, getLevelStars, getAllLevelStars,
+         addXP, getXPInfo } from "./storage.js";
 import { SAGA_LEVELS } from "./levels.js";
 import { initMatrix, drawMatrix, stopMatrix, triggerMatrixFlash, matrixSettings } from "./matrix.js";
 import { initMagma, drawMagma, stopMagma, magmaSettings as lavaRainSettings } from "./magma.js";
@@ -103,6 +104,7 @@ function init() {
   document.getElementById("dailyChallengeBtn")?.addEventListener("click", startDailyChallenge);
 
   updateDailyUI();
+  updateXPBar();
 
   document.getElementById("sagaPlayerCountSelect")?.addEventListener("change", e => {
     const wrapper = document.getElementById("sagaAiDifficultyWrapper");
@@ -277,6 +279,7 @@ function backToMenu() {
   stopTimer();
   closeModal();
   updateDailyUI();
+  updateXPBar();
   document.getElementById("gameView")?.classList.remove("active");
   document.getElementById("mainMenu").style.display = "flex";
   boardEl.innerHTML = "";
@@ -325,6 +328,56 @@ function showComboFlash(count) {
   void el.offsetWidth; // force reflow to restart animation
   el.textContent = `COMBO ×${count}!`;
   el.classList.add("active");
+
+  if (count >= 10) {
+    tryUnlockAchievement("combo_10", "Nuclear!", "Triggered a 10+ wave chain reaction");
+    grantXP(50);
+  } else if (count >= 5) {
+    tryUnlockAchievement("combo_5", "Chain Reaction!", "Triggered a 5+ wave combo");
+    grantXP(20);
+  }
+}
+
+// ── XP & RANK ────────────────────────────────────────────────────────────────
+function grantXP(amount) {
+  const result = addXP(amount);
+  updateXPBar();
+  if (result.leveledUp) showRankUpToast(result.rankName);
+}
+
+function showRankUpToast(rankName) {
+  const container = document.getElementById("achievement-container");
+  if (!container) return;
+  const toast = document.createElement("div");
+  toast.className = "achievement-toast rank-up-toast";
+  toast.innerHTML = `
+    <div class="icon">⬆️</div>
+    <div class="text">
+      <div class="title">Rank Up!</div>
+      <div class="desc">You are now: ${rankName}</div>
+    </div>
+  `;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add("hide");
+    setTimeout(() => toast.remove(), 500);
+  }, 4000);
+}
+
+function updateXPBar() {
+  const info = getXPInfo();
+  const rankEl = document.getElementById("xpRankName");
+  const amtEl  = document.getElementById("xpAmount");
+  const fillEl = document.getElementById("xpBarFill");
+  if (!rankEl) return;
+  rankEl.textContent = info.rankName;
+  if (info.isMax) {
+    if (amtEl)  amtEl.textContent  = `${info.xp} XP • MAX`;
+    if (fillEl) fillEl.style.width = "100%";
+  } else {
+    if (amtEl)  amtEl.textContent  = `${info.xpInRank} / ${info.xpToNext} XP`;
+    if (fillEl) fillEl.style.width = `${Math.min(100, (info.xpInRank / info.xpToNext) * 100)}%`;
+  }
 }
 
 function handleModeChange() {
@@ -676,6 +729,12 @@ function checkWin() {
   if (movesMade >= players.length && aliveIndices.length === 1) {
     playing = false;
     stopTimer();
+    if (aliveIndices[0] === 0) {
+      tryUnlockAchievement("first_win", "First Victory!", "Won your very first game");
+      if (mode === "timeAttack")
+        tryUnlockAchievement("speed_win", "Speed Demon!", "Won a Time Attack match");
+      grantXP(50);
+    }
     const winnerName = players[aliveIndices[0]].name;
     showGameOver("Victory!", `${winnerName} has secured the system!`, true);
     return true;
@@ -808,6 +867,11 @@ function startTimer() {
       stopTimer();
       playing = false;
       const bestIdx = scores.indexOf(Math.max(...scores));
+      if (bestIdx === 0) {
+        tryUnlockAchievement("first_win", "First Victory!", "Won your very first game");
+        tryUnlockAchievement("speed_win", "Speed Demon!", "Won a Time Attack match");
+        grantXP(50);
+      }
       const winnerName = players[bestIdx]?.name || "Unknown";
       showGameOver("Time's Up!", `${winnerName} wins with the most orbs!`, true);
     }
@@ -878,6 +942,22 @@ function showSagaWin() {
   const starsRow = "⭐".repeat(stars) + "☆".repeat(3 - stars);
   const improved = newBest > prevBest && prevBest > 0 ? " 🆕 New best!" : "";
 
+  // Achievements
+  tryUnlockAchievement("saga_start", "Chain Beginner", "Completed your first saga level");
+  if (sagaCurrentLevel >= 4)
+    tryUnlockAchievement("saga_5", "Rising Star", "Completed saga level 5");
+  if (sagaCurrentLevel >= 14)
+    tryUnlockAchievement("saga_15", "Chain Master", "Completed saga level 15");
+  if (sagaCurrentLevel === SAGA_LEVELS.length - 1)
+    tryUnlockAchievement("saga_all", "The Legend", "Completed all 25 saga levels!");
+  if (stars === 3)
+    tryUnlockAchievement("three_stars", "Perfectionist", "Earned 3 stars on a saga level");
+  if (hintsUsed === 0)
+    tryUnlockAchievement("no_hints", "Pure Skill", "Won a saga level without using any hints");
+
+  // XP: base + star bonus
+  grantXP(75 + (stars === 3 ? 50 : stars === 2 ? 25 : 0));
+
   modalTitle.textContent = `✓ Level ${sagaCurrentLevel + 1} Complete!`;
   modalBody.innerHTML = `
     <strong>${level.name}</strong><br>Enemy eliminated!
@@ -888,7 +968,12 @@ function showSagaWin() {
   // Daily challenge completion
   if (isDailyMode) {
     const streak = completeDailyChallenge();
-    modalBody.innerHTML += `<div style="color:#ffd700;margin-top:8px;font-weight:700">🔥 ${streak} day streak!</div>`;
+    grantXP(100);
+    if (streak >= 3)
+      tryUnlockAchievement("streak_3", "On a Roll!", "3-day daily challenge streak");
+    if (streak >= 7)
+      tryUnlockAchievement("streak_7", "Dedicated", "7-day daily challenge streak");
+    modalBody.innerHTML += `<div style="color:#ffd700;margin-top:8px;font-weight:700">🔥 ${streak} day streak! +100 XP</div>`;
     isDailyMode = false;
     updateDailyUI();
   }
