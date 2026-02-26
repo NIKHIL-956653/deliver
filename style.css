@@ -135,9 +135,10 @@ h1 { margin: 18px 0 6px; color: var(--primary); text-shadow: 0 0 18px var(--glow
 }
 
 .hud-message {
-    height: 24px; text-align: center; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
-    color: #fff; text-shadow: 0 0 10px var(--glow); opacity: 0; transition: opacity 0.2s;
+    height: 0; overflow: hidden; text-align: center; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+    color: #fff; text-shadow: 0 0 10px var(--glow); opacity: 0; transition: opacity 0.2s, height 0.2s;
 }
+.hud-message.active { height: 24px; }
 .hud-message.active { opacity: 1; animation: popText 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 @keyframes popText { 0% { transform: scale(0.5); } 100% { transform: scale(1); } }
 
@@ -148,7 +149,7 @@ h1 { margin: 18px 0 6px; color: var(--primary); text-shadow: 0 0 18px var(--glow
 .meter-bar { height: 100%; transition: width 0.4s ease-out; }
 
 /* --- BOARD CONTAINER --- */
-.board-container { flex: 1; display: flex; justify-content: center; align-items: center; width: 100%; overflow: hidden; position: relative; padding: 10px; }
+.board-container { flex: 1; display: flex; justify-content: center; align-items: flex-start; width: 100%; overflow: hidden; position: relative; padding: 10px 10px 4px; }
 .floating-btn { position: fixed; bottom: 20px; left: 20px; width: 40px; height: 40px; border-radius: 50%; background: #222; border: 1px solid #444; z-index: 100; color: white; cursor: pointer; display: grid; place-items: center; }
 
 /* --- TOOLBAR & BUTTONS --- */
