@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \":*)",
+      "Bash(git add js/levels.js)",
+      "Bash(git commit:*)",
+      "Bash(git push origin main)"
+    ]
+  }
+}
