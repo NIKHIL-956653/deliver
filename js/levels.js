@@ -744,8 +744,8 @@ export const SAGA_LEVELS = [
     // Difficulty: Boss.
     {
         id: 104, isBoss: true,
-        name: "The Siege",
-        description: "The AI has formed a battle line. Break through before it overwhelms you!",
+        name: "The Battle Line",
+        description: "The AI has formed a diagonal battle line. Break through before it overwhelms you!",
         rows: 9, cols: 9,
         blockedCells: [],
         presetOrbs: [
@@ -1397,7 +1397,7 @@ export const SAGA_LEVELS = [
     // Difficulty: Expert.
     {
         id: 34,
-        name: "The Fortress",
+        name: "The Bastion",
         description: "The AI is entrenched behind an L-wall. Find the opening and strike fast!",
         rows: 9, cols: 9,
         blockedCells: [
@@ -2354,7 +2354,7 @@ export const SAGA_LEVELS = [
     //  □ □ □ □ □ □ □ □ □
     {
         id: 60,
-        name: "The Moat",
+        name: "The Citadel",
         description: "An island in the center with four bridges. Claim the fortress!",
         rows: 9, cols: 9,
         blockedCells: [
