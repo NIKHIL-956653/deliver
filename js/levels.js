@@ -2441,6 +2441,573 @@ export const SAGA_LEVELS = [
             { x: 2, y: 8, player: 1, count: 2 },
             { x: 7, y: 8, player: 1, count: 2 }
         ]
+    },
+
+    // ── LEVEL 62 ─────────────────────────────────────────────────────────
+    // THE X FACTOR — 7×7, X-shaped scatter of 9 single blocks
+    //
+    // Nine single-cell blocks form an X across the board's interior.
+    // They don't block passage but massively disrupt chain paths.
+    // Diagonal thinking required — every route has a trap.
+    // Difficulty: Medium.
+    {
+        id: 62,
+        name: "The X Factor",
+        description: "Nine blocks form a hidden X. Every path has a catch!",
+        rows: 7, cols: 7,
+        blockedCells: [
+            [1,1],[5,1],
+            [2,2],[4,2],
+            [3,3],
+            [2,4],[4,4],
+            [1,5],[5,5]
+        ],
+        presetOrbs: [
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 1, y: 0, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 6, y: 6, player: 1, count: 1 },
+            { x: 5, y: 6, player: 1, count: 2 },
+            { x: 6, y: 5, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 63 ─────────────────────────────────────────────────────────
+    // THE GRID — 8×8, four evenly-spaced 2×2 blocks
+    //
+    // Four square pillars sit symmetrically in the interior, carving
+    // the board into nine connected zones. Chains must weave between
+    // the pillars — no straight lines of force exist.
+    // Difficulty: Medium.
+    {
+        id: 63,
+        name: "The Grid",
+        description: "Four pillars divide the board. Find the gaps between them!",
+        rows: 8, cols: 8,
+        blockedCells: [
+            [2,2],[3,2],[5,2],[6,2],
+            [2,3],[3,3],[5,3],[6,3],
+            [2,5],[3,5],[5,5],[6,5],
+            [2,6],[3,6],[5,6],[6,6]
+        ],
+        presetOrbs: [
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 1, y: 0, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 7, y: 7, player: 1, count: 1 },
+            { x: 6, y: 7, player: 1, count: 2 },
+            { x: 7, y: 6, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 64 ─────────────────────────────────────────────────────────
+    // THE WEDGE — 7×7, top-right corner cut off by a triangular wall
+    //
+    // A growing wedge of blocks seals off the top-right zone. Player
+    // starts top-left in the open. AI starts bottom-right in the open.
+    // The wedge forces all action through the left and bottom channels.
+    // Difficulty: Medium.
+    //
+    //  □ □ □ □ □ ■ ■
+    //  □ □ □ □ ■ ■ ■
+    //  □ □ □ ■ ■ ■ ■
+    //  □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □
+    {
+        id: 64,
+        name: "The Wedge",
+        description: "A growing wall cuts the top-right. Fight for the open ground!",
+        rows: 7, cols: 7,
+        blockedCells: [
+            [5,0],[6,0],
+            [4,1],[5,1],[6,1],
+            [3,2],[4,2],[5,2],[6,2]
+        ],
+        presetOrbs: [
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 1, y: 0, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 6, y: 6, player: 1, count: 1 },
+            { x: 5, y: 6, player: 1, count: 2 },
+            { x: 6, y: 5, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 65 ─────────────────────────────────────────────────────────
+    // THE PIPELINE — 3×9, an ultra-narrow corridor board
+    //
+    // Just three rows across. There is nowhere to hide, nowhere to
+    // flank. Every chain goes straight at the enemy. The tightest
+    // battlefield in the saga — pure head-on pressure.
+    // Difficulty: Hard.
+    {
+        id: 65,
+        name: "The Pipeline",
+        description: "Three rows. No cover. Push straight through!",
+        rows: 3, cols: 9,
+        blockedCells: [],
+        presetOrbs: [
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 0, y: 2, player: 0, count: 1 },
+            { x: 8, y: 1, player: 1, count: 2 },
+            { x: 8, y: 0, player: 1, count: 1 },
+            { x: 8, y: 2, player: 1, count: 1 }
+        ]
+    },
+
+    // ── BOSS 10 ──────────────────────────────────────────────────────────
+    // THE TITAN — 10×10, AI has a massive concentrated strike force
+    //
+    // Open 10×10 board. Two 2×2 blocks create left and right channels.
+    // You start with a strong corner cluster. The AI has 6 near-critical
+    // orbs spread in a diagonal strike formation. Survive the opening
+    // volley to have any chance.
+    // Difficulty: Boss.
+    {
+        id: 110, isBoss: true,
+        name: "The Titan",
+        description: "Massive AI firepower in a diagonal formation. Hold your ground!",
+        rows: 10, cols: 10,
+        blockedCells: [
+            [4,0],[5,0],[4,1],[5,1],
+            [4,8],[5,8],[4,9],[5,9]
+        ],
+        presetOrbs: [
+            { x: 0, y: 9, player: 0, count: 1 },
+            { x: 1, y: 9, player: 0, count: 2 },
+            { x: 0, y: 8, player: 0, count: 2 },
+            { x: 1, y: 8, player: 0, count: 3 },
+            { x: 9, y: 0, player: 1, count: 1 },
+            { x: 8, y: 0, player: 1, count: 2 },
+            { x: 9, y: 1, player: 1, count: 2 },
+            { x: 7, y: 2, player: 1, count: 3 },
+            { x: 6, y: 3, player: 1, count: 3 },
+            { x: 8, y: 3, player: 1, count: 3 }
+        ]
+    },
+
+    // ── LEVEL 66 ─────────────────────────────────────────────────────────
+    // THE CROWN — 8×8, crown-shaped barrier across the upper middle
+    //
+    // A crown of blocks sits in the upper interior. Two passages at the
+    // base let chains squeeze through. Control the passes to control
+    // the board — letting the enemy through is fatal.
+    // Difficulty: Hard.
+    //
+    //  □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □
+    //  □ □ □ ■ ■ □ □ □  ← crown top
+    //  □ ■ ■ □ □ ■ ■ □  ← crown sides (gaps at x=3,4)
+    //  □ □ □ □ □ □ □ □
+    {
+        id: 66,
+        name: "The Crown",
+        description: "A crown barrier with two narrow passes. Whoever holds the passes wins!",
+        rows: 8, cols: 8,
+        blockedCells: [
+            [3,2],[4,2],
+            [1,3],[2,3],[5,3],[6,3]
+        ],
+        presetOrbs: [
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 1, y: 0, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 7, y: 7, player: 1, count: 1 },
+            { x: 6, y: 7, player: 1, count: 2 },
+            { x: 7, y: 6, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 67 ─────────────────────────────────────────────────────────
+    // THE MAZE RUNNER — 9×9, two staggered walls create a winding path
+    //
+    // Wall 1 blocks the upper middle, forcing passage through the right.
+    // Wall 2 blocks the lower middle, forcing passage through the left.
+    // The route zigzags across the board — no straight shot exists.
+    // Difficulty: Hard.
+    {
+        id: 67,
+        name: "The Maze Runner",
+        description: "Two staggered walls force a winding path. Run the gauntlet!",
+        rows: 9, cols: 9,
+        blockedCells: [
+            [1,2],[2,2],[3,2],[4,2],[5,2],[6,2],
+            [2,5],[3,5],[4,5],[5,5],[6,5],[7,5]
+        ],
+        presetOrbs: [
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 1, y: 0, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 8, y: 0, player: 1, count: 1 },
+            { x: 7, y: 0, player: 1, count: 2 },
+            { x: 8, y: 1, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 68 ─────────────────────────────────────────────────────────
+    // THE SLINGSHOT — 7×7, top corners blocked, narrow V-neck at top
+    //
+    // Both top corners are sealed off by a growing wall, creating a
+    // V-neck at the top. Players start directly opposite at the
+    // narrowest point — high danger from the first move.
+    // Difficulty: Hard.
+    //
+    //  □ □ □ □ □ □ □   (0,0)(6,0) blocked but x=2,3,4 open)
+    //  ■ □ □ □ □ □ ■
+    //  ■ □ □ □ □ □ ■
+    //  □ □ □ □ □ □ □  ← fully open from here down
+    {
+        id: 68,
+        name: "The Slingshot",
+        description: "Tight opening at top, wide base below. Launch your chain fast!",
+        rows: 7, cols: 7,
+        blockedCells: [
+            [0,0],[1,0],[5,0],[6,0],
+            [0,1],[6,1],
+            [0,2],[6,2]
+        ],
+        presetOrbs: [
+            { x: 3, y: 0, player: 0, count: 2 },
+            { x: 2, y: 0, player: 0, count: 2 },
+            { x: 4, y: 0, player: 0, count: 2 },
+            { x: 3, y: 6, player: 1, count: 2 },
+            { x: 2, y: 6, player: 1, count: 2 },
+            { x: 4, y: 6, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 69 ─────────────────────────────────────────────────────────
+    // THE BEEHIVE — 8×7, two rows of alternating single blocks
+    //
+    // Two rows of staggered 1-cell blocks mimic a honeycomb structure.
+    // Chains must weave around the cells, creating unpredictable
+    // multi-direction explosions across the board.
+    // Difficulty: Hard.
+    {
+        id: 69,
+        name: "The Beehive",
+        description: "Honeycomb obstacles scatter chain reactions everywhere. Adapt!",
+        rows: 7, cols: 8,
+        blockedCells: [
+            [1,2],[3,2],[5,2],[7,2],
+            [0,4],[2,4],[4,4],[6,4]
+        ],
+        presetOrbs: [
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 1, y: 0, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 7, y: 6, player: 1, count: 1 },
+            { x: 6, y: 6, player: 1, count: 2 },
+            { x: 7, y: 5, player: 1, count: 2 }
+        ]
+    },
+
+    // ── BOSS 11 ──────────────────────────────────────────────────────────
+    // THE COLOSSUS — 10×10, symmetrical blockers + AI has large preset
+    //
+    // Single-cell blockers dot the edges and a 2×2 sits dead center.
+    // Both sides are disrupted by the symmetric layout. AI has a heavy
+    // interior presence ready to cascade the moment you make a mistake.
+    // Difficulty: Boss.
+    {
+        id: 111, isBoss: true,
+        name: "The Colossus",
+        description: "Symmetric blockers everywhere. The AI is already inside — fight out!",
+        rows: 10, cols: 10,
+        blockedCells: [
+            [3,0],[6,0],[3,9],[6,9],
+            [0,3],[0,6],[9,3],[9,6],
+            [4,4],[5,4],[4,5],[5,5]
+        ],
+        presetOrbs: [
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 1, y: 0, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 9, y: 9, player: 1, count: 1 },
+            { x: 8, y: 9, player: 1, count: 2 },
+            { x: 9, y: 8, player: 1, count: 2 },
+            { x: 7, y: 7, player: 1, count: 3 },
+            { x: 6, y: 8, player: 1, count: 3 },
+            { x: 8, y: 6, player: 1, count: 3 }
+        ]
+    },
+
+    // ── LEVEL 70 ─────────────────────────────────────────────────────────
+    // THE PINWHEEL — 8×8, four rotating arms of blocked cells
+    //
+    // Four 3-cell arms spin out from the center like a pinwheel.
+    // The board has four distinct quadrant zones separated by the arms,
+    // with only narrow corner gaps as connections between them.
+    // Difficulty: Hard.
+    {
+        id: 70,
+        name: "The Pinwheel",
+        description: "Four spinning arms divide the board. Slip through the gaps!",
+        rows: 8, cols: 8,
+        blockedCells: [
+            [3,1],[4,1],[5,1],
+            [6,2],[6,3],[6,4],
+            [5,6],[4,6],[3,6],
+            [1,5],[1,4],[1,3]
+        ],
+        presetOrbs: [
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 1, y: 0, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 7, y: 7, player: 1, count: 1 },
+            { x: 6, y: 7, player: 1, count: 2 },
+            { x: 7, y: 6, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 71 ─────────────────────────────────────────────────────────
+    // THE CORRIDOR — 5×10, long segmented corridor with three pillars
+    //
+    // A long wide board divided into four chambers by three vertical
+    // pillar walls. Players can only pass each pillar through the open
+    // top and bottom rows. Long range chain tactics required.
+    // Difficulty: Hard.
+    {
+        id: 71,
+        name: "The Corridor",
+        description: "Three pillars block the path. Navigate through top and bottom gaps!",
+        rows: 5, cols: 10,
+        blockedCells: [
+            [2,1],[2,2],[2,3],
+            [5,1],[5,2],[5,3],
+            [8,1],[8,2],[8,3]
+        ],
+        presetOrbs: [
+            { x: 0, y: 2, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 1, y: 2, player: 0, count: 3 },
+            { x: 9, y: 2, player: 1, count: 2 },
+            { x: 9, y: 1, player: 1, count: 2 },
+            { x: 9, y: 3, player: 1, count: 1 }
+        ]
+    },
+
+    // ── LEVEL 72 ─────────────────────────────────────────────────────────
+    // THE BOOMERANG — 9×7, two staggered walls create a Z-shaped route
+    //
+    // Wall 1 blocks the upper-center forcing passage right.
+    // Wall 2 blocks the lower-center forcing passage left.
+    // The chain must boomerang across the board — flanking is key.
+    // Difficulty: Hard.
+    {
+        id: 72,
+        name: "The Boomerang",
+        description: "Two offset walls force your chain to curve like a boomerang!",
+        rows: 7, cols: 9,
+        blockedCells: [
+            [1,2],[2,2],[3,2],[4,2],[5,2],
+            [3,4],[4,4],[5,4],[6,4],[7,4]
+        ],
+        presetOrbs: [
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 1, y: 0, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 8, y: 6, player: 1, count: 1 },
+            { x: 7, y: 6, player: 1, count: 2 },
+            { x: 8, y: 5, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 73 ─────────────────────────────────────────────────────────
+    // THE SPLIT — 7×9, entire middle row almost blocked — one gap only
+    //
+    // A near-complete wall cuts the board in half at the middle row.
+    // Only a single cell at x=3 connects top and bottom. Whoever
+    // controls that one cell controls the entire game.
+    // Difficulty: Expert.
+    {
+        id: 73,
+        name: "The Split",
+        description: "One gap connects two halves. Control the single pass or lose!",
+        rows: 9, cols: 7,
+        blockedCells: [
+            [0,4],[1,4],[2,4],[4,4],[5,4],[6,4]
+        ],
+        presetOrbs: [
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 1, y: 0, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 6, y: 8, player: 1, count: 1 },
+            { x: 5, y: 8, player: 1, count: 2 },
+            { x: 6, y: 7, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 74 ─────────────────────────────────────────────────────────
+    // THE WEB — 9×9, spider-web spokes radiating from center
+    //
+    // Ten single blocks radiate outward from the center like web spokes.
+    // Every chain that crosses a spoke gets deflected. The center
+    // remains open — reaching it first is a massive advantage.
+    // Difficulty: Expert.
+    {
+        id: 74,
+        name: "The Web",
+        description: "Web spokes deflect every chain. Race to the open center!",
+        rows: 9, cols: 9,
+        blockedCells: [
+            [4,1],
+            [1,2],[7,2],
+            [2,3],[6,3],
+            [1,5],[7,5],
+            [2,6],[6,6],
+            [4,7]
+        ],
+        presetOrbs: [
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 1, y: 0, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 8, y: 8, player: 1, count: 1 },
+            { x: 7, y: 8, player: 1, count: 2 },
+            { x: 8, y: 7, player: 1, count: 2 }
+        ]
+    },
+
+    // ── BOSS 12 ──────────────────────────────────────────────────────────
+    // THE FINAL GATE — 10×8, two staggered gate walls with narrow gaps
+    //
+    // Two heavy gate walls slash across the board with staggered gaps.
+    // The AI sits at the far end. To reach it you must navigate two
+    // chokepoints in a row — and it's waiting for you at each one.
+    // Difficulty: Boss.
+    {
+        id: 112, isBoss: true,
+        name: "The Final Gate",
+        description: "Two gates, two chokepoints. Break through before the AI breaks out!",
+        rows: 8, cols: 10,
+        blockedCells: [
+            [0,2],[1,2],[2,2],[4,2],[5,2],[6,2],[8,2],[9,2],
+            [0,5],[1,5],[3,5],[4,5],[6,5],[7,5],[9,5]
+        ],
+        presetOrbs: [
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 1, y: 0, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 9, y: 7, player: 1, count: 1 },
+            { x: 8, y: 7, player: 1, count: 2 },
+            { x: 9, y: 6, player: 1, count: 2 },
+            { x: 7, y: 6, player: 1, count: 3 },
+            { x: 5, y: 6, player: 1, count: 3 }
+        ]
+    },
+
+    // ── LEVEL 75 ─────────────────────────────────────────────────────────
+    // THE ZIPPER — 8×6, alternating teeth on both edges
+    //
+    // Left edge has teeth at y=1,3. Right edge has teeth at y=0,2,4.
+    // The board zips closed on both sides forcing play through the open
+    // interior. Any chain hugging the edge gets snagged instantly.
+    // Difficulty: Expert.
+    {
+        id: 75,
+        name: "The Zipper",
+        description: "Teeth on both edges snag any chain that gets too close to the wall!",
+        rows: 6, cols: 8,
+        blockedCells: [
+            [0,1],[0,3],
+            [7,0],[7,2],[7,4]
+        ],
+        presetOrbs: [
+            { x: 1, y: 2, player: 0, count: 3 },
+            { x: 0, y: 2, player: 0, count: 2 },
+            { x: 1, y: 1, player: 0, count: 3 },
+            { x: 6, y: 3, player: 1, count: 3 },
+            { x: 7, y: 3, player: 1, count: 2 },
+            { x: 6, y: 4, player: 1, count: 3 }
+        ]
+    },
+
+    // ── LEVEL 76 ─────────────────────────────────────────────────────────
+    // DEAD ZONE — 8×8, large L-shaped dead zone seals the top-left
+    //
+    // A big L-shaped block eliminates the top-left corner entirely.
+    // Player starts top-right in the open. AI starts bottom-left.
+    // The dead zone forces all action through the remaining open area.
+    // Difficulty: Expert.
+    {
+        id: 76,
+        name: "Dead Zone",
+        description: "The top-left corner is gone. Fight for what remains!",
+        rows: 8, cols: 8,
+        blockedCells: [
+            [0,0],[1,0],[2,0],
+            [0,1],[1,1],[2,1],
+            [0,2],[1,2],[2,2],
+            [0,3],[1,3],
+            [0,4]
+        ],
+        presetOrbs: [
+            { x: 7, y: 0, player: 0, count: 1 },
+            { x: 6, y: 0, player: 0, count: 2 },
+            { x: 7, y: 1, player: 0, count: 2 },
+            { x: 0, y: 7, player: 1, count: 1 },
+            { x: 1, y: 7, player: 1, count: 2 },
+            { x: 0, y: 6, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 77 ─────────────────────────────────────────────────────────
+    // THE DOMINO — 5×10, two halves connected only at the far edges
+    //
+    // A near-complete wall cuts the board at the middle row.
+    // The only connections are at x=0 (left edge) and x=9 (right edge).
+    // Two separate fronts — control both sides or be outflanked.
+    // Difficulty: Expert.
+    {
+        id: 77,
+        name: "The Domino",
+        description: "Board split in two. One gap on each side — fight on both fronts!",
+        rows: 5, cols: 10,
+        blockedCells: [
+            [1,2],[2,2],[3,2],[4,2],[5,2],[6,2],[7,2],[8,2]
+        ],
+        presetOrbs: [
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 1, y: 0, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 9, y: 4, player: 1, count: 1 },
+            { x: 8, y: 4, player: 1, count: 2 },
+            { x: 9, y: 3, player: 1, count: 2 }
+        ]
+    },
+
+    // ── BOSS 13 ──────────────────────────────────────────────────────────
+    // THE FINAL STAND — 10×10, complex edge blockers + fully armed AI
+    //
+    // Single blockers disrupt every edge approach. A 2×2 center block
+    // forces orbital play. Both sides are heavily armed — the board
+    // explodes from turn one. One mistake ends it.
+    // Difficulty: Boss.
+    {
+        id: 113, isBoss: true,
+        name: "The Final Stand",
+        description: "Edge blockers everywhere. Both sides fully armed. No margin for error.",
+        rows: 10, cols: 10,
+        blockedCells: [
+            [2,2],[7,2],[2,7],[7,7],
+            [4,0],[5,0],[4,9],[5,9],
+            [0,4],[0,5],[9,4],[9,5]
+        ],
+        presetOrbs: [
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 1, y: 0, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 2, y: 1, player: 0, count: 2 },
+            { x: 9, y: 9, player: 1, count: 1 },
+            { x: 8, y: 9, player: 1, count: 2 },
+            { x: 9, y: 8, player: 1, count: 2 },
+            { x: 6, y: 6, player: 1, count: 3 },
+            { x: 8, y: 6, player: 1, count: 3 },
+            { x: 6, y: 8, player: 1, count: 3 }
+        ]
     }
 
 ];

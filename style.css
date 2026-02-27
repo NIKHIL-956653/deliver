@@ -236,11 +236,11 @@ body.theme-cyberpunk.hud-sharp .cell {
 /* --- HIGHLIGHTS & HINTS --- */
 .cell.last-move {
     border: 3px solid #ffd700 !important;
-    box-shadow: 0 0 15px #ffd700, inset 0 0 10px rgba(255, 215, 0, 0.4) !important;
-    z-index: 10; transform: scale(1.05);
-    animation: lastMovePulse 1.5s infinite ease-in-out;
+    box-shadow: 0 0 28px #ffd700, 0 0 10px #fff8a0, inset 0 0 16px rgba(255, 215, 0, 0.65) !important;
+    z-index: 10; transform: scale(1.07);
+    animation: lastMovePulse 1.2s infinite ease-in-out;
 }
-@keyframes lastMovePulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.3); transform: scale(1.08); } }
+@keyframes lastMovePulse { 0%, 100% { filter: brightness(1.1); } 50% { filter: brightness(1.6); transform: scale(1.11); } }
 
 /* --- SYSTEM SIDEBAR --- */
 #systemSidebar {
