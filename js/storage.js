@@ -85,6 +85,12 @@ export function saveSkin(skin) {
 export function getSavedSkin() {
     return localStorage.getItem('neon_skin') || 'default';
 }
+export function saveBlastSkin(skin) {
+    localStorage.setItem('neon_blast_skin', skin || 'default');
+}
+export function getSavedBlastSkin() {
+    return localStorage.getItem('neon_blast_skin') || 'default';
+}
 
 export function addXP(amount) {
     const data = loadData();

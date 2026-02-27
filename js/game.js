@@ -4,11 +4,12 @@ import { playSound, toggleMute } from "./sound.js";
 import { capacity, neighbors, drawCell } from "./board.js";
 import { buildPlayerSettings } from "./player.js";
 import { makeAIMove, getProfessionalHint } from "./ai.js";
-import { spawnParticles, triggerShake, triggerFlash, triggerGlitch, triggerHeat, startCelebration } from "./fx.js";
+import { spawnParticles, spawnShockwave, spawnVoidCollapse, triggerShake, triggerFlash, triggerGlitch, triggerHeat, startCelebration } from "./fx.js";
 import { recordGameEnd, tryUnlockAchievement, loadData, saveTheme, getSavedTheme,
          isDailyCompleted, completeDailyChallenge, getDailyStreak,
          saveLevelStars, getLevelStars, getAllLevelStars,
-         addXP, getXPInfo, saveSkin, getSavedSkin } from "./storage.js";
+         addXP, getXPInfo, saveSkin, getSavedSkin,
+         saveBlastSkin, getSavedBlastSkin } from "./storage.js";
 import { SAGA_LEVELS } from "./levels.js";
 import { initMatrix, drawMatrix, stopMatrix, triggerMatrixFlash, matrixSettings } from "./matrix.js";
 import { initMagma, drawMagma, stopMagma, magmaSettings as lavaRainSettings } from "./magma.js";
@@ -146,6 +147,7 @@ function init() {
   const savedSkin = getSavedSkin();
   if (savedSkin && savedSkin !== "default") document.body.classList.add(savedSkin);
   renderSkinSelector();
+  renderBlastSkinSelector();
 
   window.addEventListener("resize", () => {
     if (document.getElementById("gameView")?.classList.contains("active")) {
@@ -552,6 +554,39 @@ function renderSkinSelector() {
   });
 }
 
+// ── BLAST SKINS ───────────────────────────────────────────────────────────────
+const BLAST_SKINS = [
+  { id: "default",   label: "Classic",  preview: "✨" },
+  { id: "shockwave", label: "Shockwave", preview: "💥" },
+  { id: "void",      label: "Void",      preview: "🌀" },
+];
+
+function applyBlastSkin(skinId) {
+  saveBlastSkin(skinId);
+  renderBlastSkinSelector();
+}
+
+function renderBlastSkinSelector() {
+  const container = document.getElementById("blastSkinSelector");
+  if (!container) return;
+  const current = getSavedBlastSkin();
+  container.innerHTML = "";
+  BLAST_SKINS.forEach(s => {
+    const btn = document.createElement("button");
+    btn.className = `skin-btn${s.id === current ? " active" : ""}`;
+    btn.innerHTML = `<span class="skin-preview">${s.preview}</span>${s.label}`;
+    btn.addEventListener("click", () => applyBlastSkin(s.id));
+    container.appendChild(btn);
+  });
+}
+
+function spawnBlast(x, y, color) {
+  const skin = getSavedBlastSkin();
+  if (skin === "shockwave") spawnShockwave(x, y, color);
+  else if (skin === "void")  spawnVoidCollapse(x, y, color);
+  else                       spawnParticles(x, y, color);
+}
+
 // ── RESPONSIVE CELL SIZE ──────────────────────────────────────────────────────
 function setCellSize(c, r) {
   const availW = window.innerWidth - 32;
@@ -861,14 +896,14 @@ async function resolveReactions() {
         const cellEl = boardEl.children[idx];
         const r = cellEl.getBoundingClientRect();
 
-        spawnParticles(r.left + r.width / 2, r.top + r.height / 2, players[current].color);
+        spawnBlast(r.left + r.width / 2, r.top + r.height / 2, players[current].color);
 
         // Subtle pop effect (not the giant scale from before)
         cellEl.style.transform = "scale(1.1)";
         setTimeout(() => { cellEl.style.transform = ""; }, 100);
 
       } catch (e) {
-        spawnParticles(x, y, players[current].color);
+        spawnBlast(x, y, players[current].color);
       }
 
       cell.count -= cap;

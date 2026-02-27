@@ -26,6 +26,7 @@ document.body.appendChild(flashOverlay);
 
 // PARTICLE SYSTEM DATA
 let particles = [];
+let rings = [];   // For Shockwave blast skin
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 function resize() {
@@ -39,13 +40,30 @@ resize();
 // CORE ANIMATION LOOP
 function updateFX() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
+    // --- Shockwave rings ---
+    for (let i = rings.length - 1; i >= 0; i--) {
+        const rng = rings[i];
+        rng.r += rng.speed;
+        rng.life -= rng.decay;
+        if (rng.life <= 0) { rings.splice(i, 1); continue; }
+        ctx.globalAlpha = rng.life;
+        ctx.strokeStyle = rng.color;
+        ctx.lineWidth = rng.width * rng.life;
+        ctx.shadowBlur = isMobile ? 0 : 18;
+        ctx.shadowColor = rng.color;
+        ctx.beginPath();
+        ctx.arc(rng.x, rng.y, rng.r, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // --- Standard particles ---
     for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.x += p.vx;
         p.y += p.vy;
         p.life -= p.decay;
-        p.size *= 0.96; // Shrink as they fly
+        p.size *= 0.96;
 
         if (p.life <= 0) {
             particles.splice(i, 1);
@@ -54,14 +72,16 @@ function updateFX() {
 
         ctx.globalAlpha = p.life;
         ctx.fillStyle = p.color;
-        ctx.shadowBlur = isMobile ? 0 : 10; // Disable shadows on mobile for speed
+        ctx.shadowBlur = isMobile ? 0 : 10;
         ctx.shadowColor = p.color;
-        
+
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
     }
-    
+
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
     requestAnimationFrame(updateFX);
 }
 requestAnimationFrame(updateFX);
@@ -130,6 +150,81 @@ export function triggerFlash(color = "white") {
 
 export function setBackgroundPulse(color) {
     document.documentElement.style.setProperty('--glow', color);
+}
+
+// ── BLAST SKIN: SHOCKWAVE ─────────────────────────────────────────────────────
+// Three crisp concentric rings expand outward + white cell flash.
+export function spawnShockwave(x, y, color) {
+    // Instant white overload flash
+    flashOverlay.style.backgroundColor = 'white';
+    flashOverlay.style.opacity = '0.55';
+    setTimeout(() => { flashOverlay.style.opacity = '0'; }, 80);
+
+    // Three staggered rings: white → player color → cyan
+    const config = [
+        { delay: 0,  color: '#ffffff',  width: 3.5, speed: 5,   decay: 0.038 },
+        { delay: 45, color: color,      width: 2.5, speed: 6.5, decay: 0.042 },
+        { delay: 90, color: '#88eeff',  width: 1.5, speed: 8,   decay: 0.048 },
+    ];
+    config.forEach(c => {
+        setTimeout(() => {
+            rings.push({ x, y, r: 4, speed: c.speed, width: c.width, color: c.color, life: 1.0, decay: c.decay });
+        }, c.delay);
+    });
+}
+
+// ── BLAST SKIN: VOID COLLAPSE ─────────────────────────────────────────────────
+// Phase 1: particles implode inward (darkness gathering).
+// Phase 2: 8 sharp shards erupt outward + colored flash.
+export function spawnVoidCollapse(x, y, color) {
+    // Phase 1 — inward pull (particles start spread, converge to center)
+    const pullCount = isMobile ? 8 : 14;
+    const spread = 48;
+    for (let i = 0; i < pullCount; i++) {
+        const angle = (i / pullCount) * Math.PI * 2;
+        particles.push({
+            x: x + Math.cos(angle) * spread,
+            y: y + Math.sin(angle) * spread,
+            vx: -Math.cos(angle) * 3.5,
+            vy: -Math.sin(angle) * 3.5,
+            size: 3 + Math.random() * 2,
+            color: '#1a0030',
+            life: 0.75,
+            decay: 0.09
+        });
+    }
+
+    // Phase 2 (80ms delay) — eruption shards
+    setTimeout(() => {
+        flashOverlay.style.backgroundColor = color;
+        flashOverlay.style.opacity = '0.5';
+        setTimeout(() => { flashOverlay.style.opacity = '0'; }, 110);
+
+        const shardCount = isMobile ? 6 : 8;
+        for (let i = 0; i < shardCount; i++) {
+            const angle = (i / shardCount) * Math.PI * 2;
+            const vel = 6 + Math.random() * 3;
+            // Two layers: big bright shard + small white core shard
+            particles.push({
+                x, y,
+                vx: Math.cos(angle) * vel,
+                vy: Math.sin(angle) * vel,
+                size: isMobile ? 5 : 8,
+                color: i % 2 === 0 ? color : '#ffffff',
+                life: 1.0,
+                decay: 0.022
+            });
+            particles.push({
+                x, y,
+                vx: Math.cos(angle) * vel * 0.55,
+                vy: Math.sin(angle) * vel * 0.55,
+                size: isMobile ? 3 : 4,
+                color: '#ffffff',
+                life: 0.9,
+                decay: 0.035
+            });
+        }
+    }, 80);
 }
 
 // Victory screen handles Matrix, Cyber, and Magma

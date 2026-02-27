@@ -705,6 +705,7 @@ body.theme-magma .cell.blocked { background: rgba(5,1,0,0.85) !important; border
     grid-template-columns: 1fr 1fr;
     gap: 6px;
 }
+#blastSkinSelector { grid-template-columns: 1fr 1fr 1fr; }
 .skin-btn {
     padding: 6px 4px;
     border-radius: 8px;
