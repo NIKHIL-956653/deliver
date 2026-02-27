@@ -4,7 +4,7 @@ import { playSound, toggleMute } from "./sound.js";
 import { capacity, neighbors, drawCell } from "./board.js";
 import { buildPlayerSettings } from "./player.js";
 import { makeAIMove, getProfessionalHint } from "./ai.js";
-import { spawnParticles, spawnShockwave, spawnVoidCollapse, triggerShake, triggerFlash, triggerGlitch, triggerHeat, startCelebration } from "./fx.js";
+import { spawnParticles, spawnShockwave, spawnVoidCollapse, triggerShake, triggerFlash, triggerGlitch, triggerHeat, startCelebration, setBackgroundPulse } from "./fx.js";
 import { recordGameEnd, tryUnlockAchievement, loadData, saveTheme, getSavedTheme,
          isDailyCompleted, completeDailyChallenge, getDailyStreak,
          saveLevelStars, getLevelStars, getAllLevelStars,
@@ -955,9 +955,12 @@ function updateScores() {
 }
 
 function updateStatus() {
+  const color = players[current]?.color || "#00ffcc";
+  setBackgroundPulse(color);
+
   if (mode === "saga") {
     statusText.textContent = current === 0 ? "Your turn" : "Enemy thinking...";
-    turnBadge.style.background = players[current]?.color || "#00ffcc";
+    turnBadge.style.background = color;
     const sagaObj = document.getElementById("sagaObjective");
     if (sagaObj?.classList.contains("active")) {
       const level = SAGA_LEVELS[sagaCurrentLevel];
@@ -967,7 +970,7 @@ function updateStatus() {
   }
   if (players[current]) {
     statusText.textContent = `${players[current].name}'s turn`;
-    turnBadge.style.background = players[current].color;
+    turnBadge.style.background = color;
   }
 }
 
