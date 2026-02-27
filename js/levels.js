@@ -183,6 +183,32 @@ export const SAGA_LEVELS = [
         ]
     },
 
+    // ── BOSS LEVEL 1 ─────────────────────────────────────────────────────
+    // THE AMBUSH — 8×8, AI owns the center cluster near-critical
+    //
+    // You start in the corner with two orbs. The AI has five near-critical orbs
+    // locked in a 2×3 center cluster. One wrong move and the chain cascades
+    // across the whole board. Push through the edge — or be ambushed.
+    // Difficulty: Boss.
+    {
+        id: 101, isBoss: true,
+        name: "The Ambush",
+        description: "The AI controls the center. Break through before it cascades!",
+        rows: 8, cols: 8,
+        blockedCells: [],
+        presetOrbs: [
+            // Player — bottom-left corner
+            { x: 0, y: 7, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 7, player: 0, count: 2 },   // y=7 edge, cap=3
+            // AI — center cluster, near-critical
+            { x: 3, y: 3, player: 1, count: 3 },   // interior, cap=4
+            { x: 4, y: 3, player: 1, count: 3 },   // interior, cap=4
+            { x: 3, y: 4, player: 1, count: 3 },   // interior, cap=4
+            { x: 4, y: 4, player: 1, count: 3 },   // interior, cap=4
+            { x: 5, y: 4, player: 1, count: 2 },   // interior, cap=4
+        ]
+    },
+
     // ── LEVEL 5 ──────────────────────────────────────────────────────────
     // THE HOURGLASS — 7×7, wide ends, single-cell waist at [3,3]
     //
@@ -327,6 +353,34 @@ export const SAGA_LEVELS = [
             { x: 2, y: 4, player: 1, count: 3 },   // interior, cap=4
             { x: 3, y: 5, player: 1, count: 2 },   // interior, cap=4
             { x: 4, y: 4, player: 1, count: 3 }    // interior, cap=4
+        ]
+    },
+
+    // ── BOSS LEVEL 2 ─────────────────────────────────────────────────────
+    // IRON FORTRESS — 9×9, vertical wall with a single gap, AI owns both flanks
+    //
+    // A 6-cell wall splits the board vertically. Only one gap at [4,4] connects
+    // the two sides. The AI controls two clusters on the right — upper and lower.
+    // You must push through the gap before both flanks synchronise.
+    // Difficulty: Boss.
+    {
+        id: 102, isBoss: true,
+        name: "Iron Fortress",
+        description: "Walls divide the battlefield. Seize the corridors!",
+        rows: 9, cols: 9,
+        blockedCells: [[4,1],[4,2],[4,3],[4,5],[4,6],[4,7]],
+        presetOrbs: [
+            // Player — top-left cluster
+            { x: 0, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 0, y: 1, player: 0, count: 2 },   // x=0 edge, cap=3
+            // AI — right zone, upper and lower, near-critical
+            { x: 6, y: 2, player: 1, count: 3 },   // interior, cap=4
+            { x: 7, y: 2, player: 1, count: 3 },   // interior, cap=4
+            { x: 8, y: 2, player: 1, count: 2 },   // x=8 edge, cap=3
+            { x: 6, y: 6, player: 1, count: 3 },   // interior, cap=4
+            { x: 7, y: 6, player: 1, count: 3 },   // interior, cap=4
+            { x: 8, y: 6, player: 1, count: 2 },   // x=8 edge, cap=3
         ]
     },
 
@@ -486,6 +540,36 @@ export const SAGA_LEVELS = [
             { x: 6, y: 0, player: 1, count: 1 },   // corner, cap=2
             { x: 5, y: 0, player: 1, count: 2 },   // y=0 edge, cap=3
             { x: 6, y: 1, player: 1, count: 2 }    // x=6 edge, cap=3
+        ]
+    },
+
+    // ── BOSS LEVEL 3 ─────────────────────────────────────────────────────
+    // SINGULARITY — 9×9, AI spread across the entire board, near-critical
+    //
+    // No walls. Eight AI orbs scattered across every quadrant, all near-critical.
+    // One chain reaction from any of them and the board erupts.
+    // Your only weapon: strike fast, trigger a cascade before the AI does.
+    // Difficulty: Boss.
+    {
+        id: 103, isBoss: true,
+        name: "Singularity",
+        description: "The final test. The AI is everywhere. Dominate or fall.",
+        rows: 9, cols: 9,
+        blockedCells: [],
+        presetOrbs: [
+            // Player — bottom-left cluster
+            { x: 0, y: 8, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 8, player: 0, count: 2 },   // y=8 edge, cap=3
+            { x: 0, y: 7, player: 0, count: 2 },   // x=0 edge, cap=3
+            // AI — spread across entire board, all near-critical
+            { x: 2, y: 2, player: 1, count: 3 },   // interior, cap=4
+            { x: 6, y: 2, player: 1, count: 3 },   // interior, cap=4
+            { x: 4, y: 4, player: 1, count: 3 },   // interior, cap=4
+            { x: 2, y: 6, player: 1, count: 3 },   // interior, cap=4
+            { x: 6, y: 6, player: 1, count: 3 },   // interior, cap=4
+            { x: 8, y: 0, player: 1, count: 1 },   // corner, cap=2
+            { x: 8, y: 4, player: 1, count: 2 },   // x=8 edge, cap=3
+            { x: 4, y: 8, player: 1, count: 2 },   // y=8 edge, cap=3
         ]
     },
 
@@ -650,6 +734,35 @@ export const SAGA_LEVELS = [
         ]
     },
 
+    // ── BOSS LEVEL 4 ─────────────────────────────────────────────────────
+    // THE SIEGE — 9×9, AI forms a diagonal battle line, all near-critical
+    //
+    // You have two orbs in the corner. The AI has seven near-critical orbs
+    // forming a diagonal battle line from top-right to the center.
+    // One false move and the entire diagonal explodes toward you.
+    // Find the weak point — or be wiped out in one chain.
+    // Difficulty: Boss.
+    {
+        id: 104, isBoss: true,
+        name: "The Siege",
+        description: "The AI has formed a battle line. Break through before it overwhelms you!",
+        rows: 9, cols: 9,
+        blockedCells: [],
+        presetOrbs: [
+            // Player — bottom-left corner only
+            { x: 0, y: 8, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 8, player: 0, count: 2 },   // y=8 edge, cap=3
+            // AI — diagonal battle line from top-right, all near-critical
+            { x: 8, y: 0, player: 1, count: 1 },   // corner, cap=2
+            { x: 7, y: 1, player: 1, count: 3 },   // interior, cap=4
+            { x: 6, y: 2, player: 1, count: 3 },   // interior, cap=4
+            { x: 5, y: 3, player: 1, count: 3 },   // interior, cap=4
+            { x: 4, y: 4, player: 1, count: 3 },   // interior, cap=4
+            { x: 3, y: 5, player: 1, count: 3 },   // interior, cap=4
+            { x: 2, y: 6, player: 1, count: 3 },   // interior, cap=4
+        ]
+    },
+
     // ── LEVEL 17 ─────────────────────────────────────────────────────────
     // THE SPINE — 3 rows × 9 cols, the longest corridor in the game
     //
@@ -791,6 +904,36 @@ export const SAGA_LEVELS = [
             { x: 7, y: 0, player: 1, count: 2 },   // y=0 edge, cap=3
             { x: 8, y: 1, player: 1, count: 2 },   // x=8 edge, cap=3
             { x: 7, y: 1, player: 1, count: 3 }    // interior, cap=4
+        ]
+    },
+
+    // ── BOSS LEVEL 5 ─────────────────────────────────────────────────────
+    // THE OMEGA — 9×9, AI owns all four corners and the center
+    //
+    // The ultimate boss. The AI has claimed every corner of the board plus
+    // the center and two edge posts — eight orbs total, all near-critical.
+    // You have three orbs and one chance. One perfect chain, or it's over.
+    // Difficulty: Boss.
+    {
+        id: 105, isBoss: true,
+        name: "The Omega",
+        description: "The AI has claimed every corner. This is your last stand!",
+        rows: 9, cols: 9,
+        blockedCells: [],
+        presetOrbs: [
+            // Player — bottom-left
+            { x: 0, y: 8, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 8, player: 0, count: 2 },   // y=8 edge, cap=3
+            { x: 0, y: 7, player: 0, count: 2 },   // x=0 edge, cap=3
+            // AI — all four corners + center + edges, all near-critical
+            { x: 8, y: 0, player: 1, count: 1 },   // top-right corner, cap=2
+            { x: 0, y: 0, player: 1, count: 1 },   // top-left corner, cap=2
+            { x: 8, y: 8, player: 1, count: 1 },   // bottom-right corner, cap=2
+            { x: 2, y: 2, player: 1, count: 3 },   // interior, cap=4
+            { x: 6, y: 2, player: 1, count: 3 },   // interior, cap=4
+            { x: 4, y: 4, player: 1, count: 3 },   // center, cap=4
+            { x: 6, y: 6, player: 1, count: 3 },   // interior, cap=4
+            { x: 8, y: 4, player: 1, count: 2 },   // x=8 edge, cap=3
         ]
     },
 
@@ -1014,49 +1157,130 @@ export const SAGA_LEVELS = [
         ]
     },
 
-    // ── BOSS LEVELS ───────────────────────────────────────────────────────────
+    // ── LEVEL 26 ─────────────────────────────────────────────────────────
+    // THE PINCER — 8×8, blocked corner L-shapes create pincer arms
+    //
+    // Four corner L-shapes block the extremities, leaving an open diamond
+    // in the centre. Players start in the top and bottom open zones.
+    // Chain reactions curve around the space; the pincer arms feel alive.
+    // Difficulty: Medium-Hard.
     {
-        id: 101, isBoss: true,
-        name: "The Ambush",
-        description: "The AI controls the center. Break through before it cascades!",
+        id: 26,
+        name: "The Pincer",
+        description: "Corner walls form pincers. Fight through the open diamond!",
         rows: 8, cols: 8,
-        blockedCells: [],
+        blockedCells: [
+            [0,0],[1,0],[0,1],
+            [6,0],[7,0],[7,1],
+            [0,6],[0,7],[1,7],
+            [6,7],[7,6],[7,7]
+        ],
         presetOrbs: [
-            // Player — bottom-left corner
-            { x: 0, y: 7, player: 0, count: 1 },   // corner, cap=2
-            { x: 1, y: 7, player: 0, count: 2 },   // y=7 edge, cap=3
-            // AI — center cluster, near-critical
-            { x: 3, y: 3, player: 1, count: 3 },   // interior, cap=4
-            { x: 4, y: 3, player: 1, count: 3 },   // interior, cap=4
-            { x: 3, y: 4, player: 1, count: 3 },   // interior, cap=4
-            { x: 4, y: 4, player: 1, count: 3 },   // interior, cap=4
-            { x: 5, y: 4, player: 1, count: 2 },   // interior, cap=4
+            // Player — top-centre-left
+            { x: 2, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 3, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 2, y: 1, player: 0, count: 3 },   // interior, cap=4
+            // AI — bottom-centre-right
+            { x: 5, y: 7, player: 1, count: 2 },   // y=7 edge, cap=3
+            { x: 4, y: 7, player: 1, count: 2 },   // y=7 edge, cap=3
+            { x: 5, y: 6, player: 1, count: 3 }    // interior, cap=4
         ]
     },
+
+    // ── LEVEL 27 ─────────────────────────────────────────────────────────
+    // THE FAULT LINE — 8×8, a diagonal wall separates two triangle zones
+    //
+    // Blocked cells trace a diagonal from top-right to bottom-left.
+    // Player holds the top-left triangle; AI holds the bottom-right.
+    // The fault line creates a hard border — to win you must explode across it.
+    // Difficulty: Hard.
     {
-        id: 102, isBoss: true,
-        name: "Iron Fortress",
-        description: "Walls divide the battlefield. Seize the corridors!",
-        rows: 9, cols: 9,
-        blockedCells: [[4,1],[4,2],[4,3],[4,5],[4,6],[4,7]],
+        id: 27,
+        name: "The Fault Line",
+        description: "A diagonal wall splits the board. Shatter it and take everything!",
+        rows: 8, cols: 8,
+        blockedCells: [
+            [7,0],[6,1],[5,2],[4,3],[3,4],[2,5],[1,6],[0,7]
+        ],
         presetOrbs: [
-            // Player — top-left cluster
+            // Player — top-left corner
             { x: 0, y: 0, player: 0, count: 1 },   // corner, cap=2
             { x: 1, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
             { x: 0, y: 1, player: 0, count: 2 },   // x=0 edge, cap=3
-            // AI — right zone, upper and lower, near-critical
-            { x: 6, y: 2, player: 1, count: 3 },   // interior, cap=4
-            { x: 7, y: 2, player: 1, count: 3 },   // interior, cap=4
-            { x: 8, y: 2, player: 1, count: 2 },   // x=8 edge, cap=3
-            { x: 6, y: 6, player: 1, count: 3 },   // interior, cap=4
-            { x: 7, y: 6, player: 1, count: 3 },   // interior, cap=4
-            { x: 8, y: 6, player: 1, count: 2 },   // x=8 edge, cap=3
+            // AI — bottom-right corner
+            { x: 7, y: 7, player: 1, count: 1 },   // corner, cap=2
+            { x: 6, y: 7, player: 1, count: 2 },   // y=7 edge, cap=3
+            { x: 7, y: 6, player: 1, count: 2 }    // x=7 edge, cap=3
         ]
     },
+
+    // ── LEVEL 28 ─────────────────────────────────────────────────────────
+    // THE TWIN ISLANDS — 8×8, two 2×2 islands disrupt the centre
+    //
+    // Two solid 2×2 blocked islands break up flow in opposing quadrants.
+    // Chain reactions must navigate around them — flanking and timing matter.
+    // Direct paths are cut off; the game becomes a chess match.
+    // Difficulty: Hard.
     {
-        id: 103, isBoss: true,
-        name: "Singularity",
-        description: "The final test. The AI is everywhere. Dominate or fall.",
+        id: 28,
+        name: "The Twin Islands",
+        description: "Two islands block the way. Go around, over, or be swallowed!",
+        rows: 8, cols: 8,
+        blockedCells: [
+            [2,1],[3,1],[2,2],[3,2],
+            [4,5],[5,5],[4,6],[5,6]
+        ],
+        presetOrbs: [
+            // Player — top-left corner
+            { x: 0, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 0, y: 1, player: 0, count: 2 },   // x=0 edge, cap=3
+            // AI — bottom-right corner
+            { x: 7, y: 7, player: 1, count: 1 },   // corner, cap=2
+            { x: 6, y: 7, player: 1, count: 2 },   // y=7 edge, cap=3
+            { x: 7, y: 6, player: 1, count: 2 }    // x=7 edge, cap=3
+        ]
+    },
+
+    // ── LEVEL 29 ─────────────────────────────────────────────────────────
+    // THE SQUEEZE — 9×9, two staggered half-walls force a zigzag path
+    //
+    // A wall at row 3 blocks x=0–5; a second wall at row 6 blocks x=3–8.
+    // Players must zigzag through the gaps: right then left.
+    // The asymmetric openings create tension — you can't go straight.
+    // Difficulty: Expert.
+    {
+        id: 29,
+        name: "The Squeeze",
+        description: "Two walls, two gaps, one zigzag path. Thread the needle or lose!",
+        rows: 9, cols: 9,
+        blockedCells: [
+            [0,3],[1,3],[2,3],[3,3],[4,3],[5,3],
+            [3,6],[4,6],[5,6],[6,6],[7,6],[8,6]
+        ],
+        presetOrbs: [
+            // Player — top-left corner
+            { x: 0, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 0, y: 1, player: 0, count: 2 },   // x=0 edge, cap=3
+            // AI — bottom-right corner
+            { x: 8, y: 8, player: 1, count: 1 },   // corner, cap=2
+            { x: 7, y: 8, player: 1, count: 2 },   // y=8 edge, cap=3
+            { x: 8, y: 7, player: 1, count: 2 }    // x=8 edge, cap=3
+        ]
+    },
+
+    // ── LEVEL 30 ─────────────────────────────────────────────────────────
+    // THE NEXUS — 9×9, open board, AI starts with board-wide presence
+    //
+    // The largest open board. No walls, no mercy.
+    // The AI begins with six near-critical orbs spread across every quadrant.
+    // Your only hope: start a chain reaction that cascades across the entire board.
+    // Difficulty: Expert.
+    {
+        id: 30,
+        name: "The Nexus",
+        description: "No walls. The AI owns the board. One perfect chain — that's all you need.",
         rows: 9, cols: 9,
         blockedCells: [],
         presetOrbs: [
@@ -1064,15 +1288,1158 @@ export const SAGA_LEVELS = [
             { x: 0, y: 8, player: 0, count: 1 },   // corner, cap=2
             { x: 1, y: 8, player: 0, count: 2 },   // y=8 edge, cap=3
             { x: 0, y: 7, player: 0, count: 2 },   // x=0 edge, cap=3
-            // AI — spread across entire board, all near-critical
-            { x: 2, y: 2, player: 1, count: 3 },   // interior, cap=4
-            { x: 6, y: 2, player: 1, count: 3 },   // interior, cap=4
-            { x: 4, y: 4, player: 1, count: 3 },   // interior, cap=4
-            { x: 2, y: 6, player: 1, count: 3 },   // interior, cap=4
-            { x: 6, y: 6, player: 1, count: 3 },   // interior, cap=4
+            // AI — spread across board, near-critical
             { x: 8, y: 0, player: 1, count: 1 },   // corner, cap=2
+            { x: 4, y: 0, player: 1, count: 2 },   // y=0 edge, cap=3
             { x: 8, y: 4, player: 1, count: 2 },   // x=8 edge, cap=3
+            { x: 5, y: 2, player: 1, count: 3 },   // interior, cap=4
+            { x: 3, y: 5, player: 1, count: 3 },   // interior, cap=4
+            { x: 7, y: 6, player: 1, count: 3 }    // interior, cap=4
+        ]
+    },
+
+    // ── LEVEL 31 ─────────────────────────────────────────────────────────
+    // THE CROSSROADS — 9×9, four large 3×3 corner blocks
+    //
+    // Only the cross-shaped centre and arms remain playable.
+    // Players race down opposite arms toward the centre junction.
+    // First to control the intersection controls the whole board.
+    // Difficulty: Medium-Hard.
+    {
+        id: 31,
+        name: "The Crossroads",
+        description: "Four massive corner blocks. Race to the center junction or lose the arms!",
+        rows: 9, cols: 9,
+        blockedCells: [
+            [0,0],[1,0],[2,0],[6,0],[7,0],[8,0],
+            [0,1],[1,1],[2,1],[6,1],[7,1],[8,1],
+            [0,2],[1,2],[2,2],[6,2],[7,2],[8,2],
+            [0,6],[1,6],[2,6],[6,6],[7,6],[8,6],
+            [0,7],[1,7],[2,7],[6,7],[7,7],[8,7],
+            [0,8],[1,8],[2,8],[6,8],[7,8],[8,8]
+        ],
+        presetOrbs: [
+            // Player — top-centre
+            { x: 3, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 4, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 4, y: 1, player: 0, count: 3 },   // interior, cap=4
+            // AI — bottom-centre
+            { x: 5, y: 8, player: 1, count: 2 },   // y=8 edge, cap=3
             { x: 4, y: 8, player: 1, count: 2 },   // y=8 edge, cap=3
+            { x: 4, y: 7, player: 1, count: 3 }    // interior, cap=4
+        ]
+    },
+
+    // ── LEVEL 32 ─────────────────────────────────────────────────────────
+    // THE BARRICADE — 9×9, one long wall with a single gap on the far left
+    //
+    // A wall from x=1 to x=8 cuts the board in half at row 4.
+    // Only x=0 is open — one narrow gap on the left edge.
+    // Both players start behind the wall on opposite sides.
+    // Whoever chains through the gap first gains a massive advantage.
+    // Difficulty: Hard.
+    {
+        id: 32,
+        name: "The Barricade",
+        description: "One wall, one gap. Push through the left edge before the AI does!",
+        rows: 9, cols: 9,
+        blockedCells: [
+            [1,4],[2,4],[3,4],[4,4],[5,4],[6,4],[7,4],[8,4]
+        ],
+        presetOrbs: [
+            // Player — top-left (gap side)
+            { x: 0, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 0, y: 1, player: 0, count: 2 },   // x=0 edge, cap=3
+            // AI — bottom-right
+            { x: 8, y: 8, player: 1, count: 1 },   // corner, cap=2
+            { x: 7, y: 8, player: 1, count: 2 },   // y=8 edge, cap=3
+            { x: 8, y: 7, player: 1, count: 2 }    // x=8 edge, cap=3
+        ]
+    },
+
+    // ── LEVEL 33 ─────────────────────────────────────────────────────────
+    // THE ARCHIPELAGO — 8×8, nine scattered single-cell island obstacles
+    //
+    // Nine lone blocked cells scattered in irregular positions across the board.
+    // No walls — just nine tiny rocks that deflect chain reactions unexpectedly.
+    // Every path curves around them in ways that are hard to predict.
+    // Difficulty: Hard.
+    {
+        id: 33,
+        name: "The Archipelago",
+        description: "Islands scattered everywhere. Navigate the channels or get stranded!",
+        rows: 8, cols: 8,
+        blockedCells: [
+            [2,1],[5,1],
+            [1,3],[4,3],[6,3],
+            [2,5],[5,5],
+            [1,6],[6,6]
+        ],
+        presetOrbs: [
+            // Player — top-left corner
+            { x: 0, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 0, y: 1, player: 0, count: 2 },   // x=0 edge, cap=3
+            // AI — bottom-right corner
+            { x: 7, y: 7, player: 1, count: 1 },   // corner, cap=2
+            { x: 6, y: 7, player: 1, count: 2 },   // y=7 edge, cap=3
+            { x: 7, y: 6, player: 1, count: 2 }    // x=7 edge, cap=3
+        ]
+    },
+
+    // ── LEVEL 34 ─────────────────────────────────────────────────────────
+    // THE FORTRESS — 9×9, L-shaped wall entrenches the AI's zone
+    //
+    // An L-wall runs from the top to the middle-right of the board,
+    // creating a walled-off zone where the AI clusters.
+    // The only way in is from the bottom — a long, exposed approach.
+    // Difficulty: Expert.
+    {
+        id: 34,
+        name: "The Fortress",
+        description: "The AI is entrenched behind an L-wall. Find the opening and strike fast!",
+        rows: 9, cols: 9,
+        blockedCells: [
+            [5,0],[5,1],[5,2],[5,3],[5,4],
+            [6,4],[7,4],[8,4]
+        ],
+        presetOrbs: [
+            // Player — left side
+            { x: 0, y: 4, player: 0, count: 2 },   // x=0 edge, cap=3
+            { x: 1, y: 3, player: 0, count: 3 },   // interior, cap=4
+            { x: 1, y: 5, player: 0, count: 3 },   // interior, cap=4
+            // AI — inside fortress (top-right zone)
+            { x: 8, y: 0, player: 1, count: 1 },   // corner, cap=2
+            { x: 7, y: 0, player: 1, count: 2 },   // y=0 edge, cap=3
+            { x: 8, y: 1, player: 1, count: 2 },   // x=8 edge, cap=3
+            { x: 6, y: 2, player: 1, count: 3 }    // interior, cap=4
+        ]
+    },
+
+    // ── LEVEL 35 ─────────────────────────────────────────────────────────
+    // THE CHAOS — 9×9, fully open board, equal starting forces
+    //
+    // Maximum board. No walls. Both players start with four near-critical orbs
+    // spread across opposite corners. Pure skill, pure strategy.
+    // This is the last fight before the final boss.
+    // Difficulty: Expert.
+    {
+        id: 35,
+        name: "The Chaos",
+        description: "No walls. Maximum board. Equal armies — pure skill decides the winner!",
+        rows: 9, cols: 9,
+        blockedCells: [],
+        presetOrbs: [
+            // Player — bottom-left, strong opening
+            { x: 0, y: 8, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 8, player: 0, count: 2 },   // y=8 edge, cap=3
+            { x: 0, y: 7, player: 0, count: 2 },   // x=0 edge, cap=3
+            { x: 2, y: 7, player: 0, count: 3 },   // interior, cap=4
+            // AI — top-right, strong opening
+            { x: 8, y: 0, player: 1, count: 1 },   // corner, cap=2
+            { x: 7, y: 0, player: 1, count: 2 },   // y=0 edge, cap=3
+            { x: 8, y: 1, player: 1, count: 2 },   // x=8 edge, cap=3
+            { x: 6, y: 1, player: 1, count: 3 }    // interior, cap=4
+        ]
+    },
+
+    // ── LEVEL 36 ─────────────────────────────────────────────────────────
+    // THE DIAMOND — 9×9, large blocked corners create a diamond shape
+    //
+    // The four corners are cut away in steps, leaving a perfect diamond.
+    // Chain reactions must curve with the board shape — no straight paths.
+    // Players race from opposite diamond tips toward the center.
+    // Difficulty: Medium-Hard.
+    {
+        id: 36,
+        name: "The Diamond",
+        description: "Blocked corners carve a diamond. Race from tip to tip!",
+        rows: 9, cols: 9,
+        blockedCells: [
+            [0,0],[1,0],[2,0],[3,0],[5,0],[6,0],[7,0],[8,0],
+            [0,1],[1,1],[2,1],[6,1],[7,1],[8,1],
+            [0,2],[1,2],[7,2],[8,2],
+            [0,3],[8,3],
+            [0,5],[8,5],
+            [0,6],[1,6],[7,6],[8,6],
+            [0,7],[1,7],[2,7],[6,7],[7,7],[8,7],
+            [0,8],[1,8],[2,8],[3,8],[5,8],[6,8],[7,8],[8,8]
+        ],
+        presetOrbs: [
+            // Player — top diamond tip
+            { x: 4, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 3, y: 1, player: 0, count: 3 },   // interior, cap=4
+            { x: 5, y: 1, player: 0, count: 3 },   // interior, cap=4
+            // AI — bottom diamond tip
+            { x: 4, y: 8, player: 1, count: 2 },   // y=8 edge, cap=3
+            { x: 3, y: 7, player: 1, count: 3 },   // interior, cap=4
+            { x: 5, y: 7, player: 1, count: 3 }    // interior, cap=4
+        ]
+    },
+
+    // ── LEVEL 37 ─────────────────────────────────────────────────────────
+    // THE H-BRIDGE — 8×8, H-shaped board: two arms joined by a crossbar
+    //
+    // Two vertical arms (left x=0-1 and right x=6-7) are connected only by
+    // a 2-row crossbar in the middle (y=3-4). Build power in your arm,
+    // then charge across the bridge. It's narrow — one chain can decide it.
+    // Difficulty: Hard.
+    {
+        id: 37,
+        name: "The H-Bridge",
+        description: "Two towers, one bridge. Charge across before the AI fortifies!",
+        rows: 8, cols: 8,
+        blockedCells: [
+            [2,0],[3,0],[4,0],[5,0],
+            [2,1],[3,1],[4,1],[5,1],
+            [2,2],[3,2],[4,2],[5,2],
+            [2,5],[3,5],[4,5],[5,5],
+            [2,6],[3,6],[4,6],[5,6],
+            [2,7],[3,7],[4,7],[5,7]
+        ],
+        presetOrbs: [
+            // Player — top-left arm
+            { x: 0, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 0, y: 1, player: 0, count: 2 },   // x=0 edge, cap=3
+            // AI — top-right arm
+            { x: 7, y: 0, player: 1, count: 1 },   // corner, cap=2
+            { x: 6, y: 0, player: 1, count: 2 },   // y=0 edge, cap=3
+            { x: 7, y: 1, player: 1, count: 2 }    // x=7 edge, cap=3
+        ]
+    },
+
+    // ── LEVEL 38 ─────────────────────────────────────────────────────────
+    // THE SERPENT — 9×9, two staggered horizontal walls force a snake path
+    //
+    // A wall at y=2 has a gap at the far right (x=8).
+    // A wall at y=5 has a gap at the far left (x=0).
+    // Players must zigzag full-width twice to cross the board — an S-curve.
+    // Difficulty: Hard.
+    {
+        id: 38,
+        name: "The Serpent",
+        description: "Two walls, gaps on opposite ends. Slither through or be cut off!",
+        rows: 9, cols: 9,
+        blockedCells: [
+            [0,2],[1,2],[2,2],[3,2],[4,2],[5,2],[6,2],[7,2],
+            [1,5],[2,5],[3,5],[4,5],[5,5],[6,5],[7,5],[8,5]
+        ],
+        presetOrbs: [
+            // Player — top-left
+            { x: 0, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 0, y: 1, player: 0, count: 2 },   // x=0 edge, cap=3
+            // AI — bottom-right
+            { x: 8, y: 8, player: 1, count: 1 },   // corner, cap=2
+            { x: 7, y: 8, player: 1, count: 2 },   // y=8 edge, cap=3
+            { x: 8, y: 7, player: 1, count: 2 }    // x=8 edge, cap=3
+        ]
+    },
+
+    // ── LEVEL 39 ─────────────────────────────────────────────────────────
+    // THE MOAT — 9×9, ring wall surrounds the AI — attack through two gaps
+    //
+    // A walled ring isolates the center 5×5 zone. Two gaps (top and bottom
+    // at x=4) are the only way in. Player attacks from outside; AI defends
+    // the fortress interior. One breakthrough and the inside cascades.
+    // Difficulty: Hard.
+    {
+        id: 39,
+        name: "The Moat",
+        description: "The AI is walled in. Find the two gaps and storm the fortress!",
+        rows: 9, cols: 9,
+        blockedCells: [
+            [1,1],[2,1],[3,1],[5,1],[6,1],[7,1],
+            [1,2],[1,3],[1,4],[1,5],[1,6],
+            [7,2],[7,3],[7,4],[7,5],[7,6],
+            [1,7],[2,7],[3,7],[5,7],[6,7],[7,7]
+        ],
+        presetOrbs: [
+            // Player — outside top-left corner
+            { x: 0, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 0, y: 1, player: 0, count: 2 },   // x=0 edge, cap=3
+            // AI — inside the moat
+            { x: 4, y: 4, player: 1, count: 3 },   // center, cap=4
+            { x: 3, y: 3, player: 1, count: 3 },   // interior, cap=4
+            { x: 5, y: 5, player: 1, count: 3 }    // interior, cap=4
+        ]
+    },
+
+    // ── LEVEL 40 ─────────────────────────────────────────────────────────
+    // THE COMB — 8×8, vertical teeth hanging from the top row
+    //
+    // Four teeth (blocked columns at x=0,2,4,6 for rows 1–3) hang from the
+    // top, creating four narrow open channels (x=1,3,5,7).
+    // Chains in the top zone must stay in their channel.
+    // Below row 3 the board opens up fully — pick your channel wisely.
+    // Difficulty: Medium-Hard.
+    {
+        id: 40,
+        name: "The Comb",
+        description: "Vertical teeth divide the top half. Pick a channel and burst through!",
+        rows: 8, cols: 8,
+        blockedCells: [
+            [0,1],[2,1],[4,1],[6,1],
+            [0,2],[2,2],[4,2],[6,2],
+            [0,3],[2,3],[4,3],[6,3]
+        ],
+        presetOrbs: [
+            // Player — top-right channel (x=7, open)
+            { x: 7, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 7, y: 1, player: 0, count: 2 },   // x=7 edge, cap=3
+            { x: 7, y: 2, player: 0, count: 2 },   // x=7 edge, cap=3
+            // AI — bottom-left open zone
+            { x: 0, y: 7, player: 1, count: 1 },   // corner, cap=2
+            { x: 1, y: 7, player: 1, count: 2 },   // y=7 edge, cap=3
+            { x: 0, y: 6, player: 1, count: 2 }    // x=0 edge, cap=3
+        ]
+    },
+
+    // ── LEVEL 41 ─────────────────────────────────────────────────────────
+    // THE STAIRCASE — 9×9, two stepped corner walls in opposing corners
+    //
+    // Bottom-left has a 3-step staircase wall (each step 1 cell wider).
+    // Top-right mirrors it. Players start in the open diagonal zones.
+    // The walls shorten effective paths — chains still cross but at angles.
+    // Difficulty: Hard.
+    {
+        id: 41,
+        name: "The Staircase",
+        description: "Stepped walls shrink two corners. Think diagonally or get cornered!",
+        rows: 9, cols: 9,
+        blockedCells: [
+            [0,2],[0,3],[1,3],[0,4],[1,4],[2,4],
+            [6,5],[7,5],[8,5],[7,6],[8,6],[8,7]
+        ],
+        presetOrbs: [
+            // Player — top-right corner
+            { x: 8, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 7, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 8, y: 1, player: 0, count: 2 },   // x=8 edge, cap=3
+            // AI — bottom-left corner
+            { x: 0, y: 8, player: 1, count: 1 },   // corner, cap=2
+            { x: 1, y: 8, player: 1, count: 2 },   // y=8 edge, cap=3
+            { x: 0, y: 7, player: 1, count: 2 }    // x=0 edge, cap=3
+        ]
+    },
+
+    // ── LEVEL 42 ─────────────────────────────────────────────────────────
+    // THE FOUR PILLARS — 9×9, four evenly-spaced 2×2 blocked pillars
+    //
+    // Four 2×2 pillars sit in the four inner quadrants. No path is fully
+    // blocked — every route still exists — but chains deflect around
+    // the pillars in subtle ways, creating surprising multi-path cascades.
+    // Difficulty: Hard.
+    {
+        id: 42,
+        name: "The Four Pillars",
+        description: "Four stone pillars scattered evenly. Route around them — or through!",
+        rows: 9, cols: 9,
+        blockedCells: [
+            [2,2],[3,2],[2,3],[3,3],
+            [6,2],[7,2],[6,3],[7,3],
+            [2,6],[3,6],[2,7],[3,7],
+            [6,6],[7,6],[6,7],[7,7]
+        ],
+        presetOrbs: [
+            // Player — top-left corner
+            { x: 0, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 0, y: 1, player: 0, count: 2 },   // x=0 edge, cap=3
+            // AI — bottom-right corner
+            { x: 8, y: 8, player: 1, count: 1 },   // corner, cap=2
+            { x: 7, y: 8, player: 1, count: 2 },   // y=8 edge, cap=3
+            { x: 8, y: 7, player: 1, count: 2 }    // x=8 edge, cap=3
+        ]
+    },
+
+    // ── LEVEL 43 ─────────────────────────────────────────────────────────
+    // THE TUNNELS — 8×8, two adjacent walls with staggered single-cell gaps
+    //
+    // Wall at y=3 has a gap at x=3 (center-left).
+    // Wall at y=4 has a gap at x=4 (center-right).
+    // Back-to-back walls with offset gaps force a tight diagonal crossing.
+    // Any chain through y=3 must pivot instantly to use the y=4 gap.
+    // Difficulty: Expert.
+    {
+        id: 43,
+        name: "The Tunnels",
+        description: "Two walls, back-to-back, offset gaps. Thread both or die between them!",
+        rows: 8, cols: 8,
+        blockedCells: [
+            [0,3],[1,3],[2,3],[4,3],[5,3],[6,3],[7,3],
+            [0,4],[1,4],[2,4],[3,4],[5,4],[6,4],[7,4]
+        ],
+        presetOrbs: [
+            // Player — top-left
+            { x: 0, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 0, y: 1, player: 0, count: 2 },   // x=0 edge, cap=3
+            // AI — bottom-right
+            { x: 7, y: 7, player: 1, count: 1 },   // corner, cap=2
+            { x: 6, y: 7, player: 1, count: 2 },   // y=7 edge, cap=3
+            { x: 7, y: 6, player: 1, count: 2 }    // x=7 edge, cap=3
+        ]
+    },
+
+    // ── LEVEL 44 ─────────────────────────────────────────────────────────
+    // THE VORTEX — 8×8, two mirrored L-walls create a swirling pattern
+    //
+    // A top-left L-wall and a bottom-right mirrored L-wall force chains
+    // into a rotating, vortex-like detour. Going straight requires going
+    // around both bends — the board feels like it's spinning.
+    // Difficulty: Expert.
+    {
+        id: 44,
+        name: "The Vortex",
+        description: "Two L-walls spin the flow. Ride the vortex — don't fight it!",
+        rows: 8, cols: 8,
+        blockedCells: [
+            [3,1],[3,2],[0,3],[1,3],[2,3],
+            [5,4],[6,4],[7,4],[4,5],[4,6]
+        ],
+        presetOrbs: [
+            // Player — top-right corner
+            { x: 7, y: 0, player: 0, count: 1 },   // corner, cap=2
+            { x: 6, y: 0, player: 0, count: 2 },   // y=0 edge, cap=3
+            { x: 7, y: 1, player: 0, count: 2 },   // x=7 edge, cap=3
+            // AI — bottom-left corner
+            { x: 0, y: 7, player: 1, count: 1 },   // corner, cap=2
+            { x: 1, y: 7, player: 1, count: 2 },   // y=7 edge, cap=3
+            { x: 0, y: 6, player: 1, count: 2 }    // x=0 edge, cap=3
+        ]
+    },
+
+    // ── LEVEL 45 ─────────────────────────────────────────────────────────
+    // THE GRAND ARENA — 9×9, massive 5×5 center island, tight 2-cell ring
+    //
+    // A huge 5×5 dead center leaves only a 2-cell-wide ring around the board.
+    // Every chain reaction must orbit the colossus. Players start in diagonally
+    // opposite ring corners — the race around the ring decides everything.
+    // Difficulty: Expert.
+    {
+        id: 45,
+        name: "The Grand Arena",
+        description: "Massive center block. Race the 2-cell ring — every orbit counts!",
+        rows: 9, cols: 9,
+        blockedCells: [
+            [2,2],[3,2],[4,2],[5,2],[6,2],
+            [2,3],[3,3],[4,3],[5,3],[6,3],
+            [2,4],[3,4],[4,4],[5,4],[6,4],
+            [2,5],[3,5],[4,5],[5,5],[6,5],
+            [2,6],[3,6],[4,6],[5,6],[6,6]
+        ],
+        presetOrbs: [
+            // Player — bottom-left ring corner
+            { x: 0, y: 8, player: 0, count: 1 },   // corner, cap=2
+            { x: 1, y: 8, player: 0, count: 2 },   // y=8 edge, cap=3
+            { x: 0, y: 7, player: 0, count: 2 },   // x=0 edge, cap=3
+            { x: 1, y: 7, player: 0, count: 3 },   // interior, cap=4
+            // AI — top-right ring corner
+            { x: 8, y: 0, player: 1, count: 1 },   // corner, cap=2
+            { x: 7, y: 0, player: 1, count: 2 },   // y=0 edge, cap=3
+            { x: 8, y: 1, player: 1, count: 2 },   // x=8 edge, cap=3
+            { x: 7, y: 1, player: 1, count: 3 }    // interior, cap=4
+        ]
+    },
+
+    // ── LEVEL 46 ─────────────────────────────────────────────────────────
+    // THE CROSSHAIRS — 7×7, four 2×2 corner blocks, battle for center
+    //
+    // All four corners are sealed off. The fight happens in the open cross
+    // of free cells — top edge, bottom edge, left, right, and center.
+    // No hiding in corners. Pure head-on aggression.
+    // Difficulty: Medium.
+    {
+        id: 46,
+        name: "The Crosshairs",
+        description: "Four blocked corners. The battle is won or lost in the center!",
+        rows: 7, cols: 7,
+        blockedCells: [
+            [0,0],[1,0],[0,1],[1,1],
+            [5,0],[6,0],[5,1],[6,1],
+            [0,5],[1,5],[0,6],[1,6],
+            [5,5],[6,5],[5,6],[6,6]
+        ],
+        presetOrbs: [
+            // Player — top center
+            { x: 3, y: 0, player: 0, count: 2 },
+            { x: 2, y: 1, player: 0, count: 2 },
+            { x: 4, y: 1, player: 0, count: 2 },
+            // AI — bottom center
+            { x: 3, y: 6, player: 1, count: 2 },
+            { x: 2, y: 5, player: 1, count: 2 },
+            { x: 4, y: 5, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 47 ─────────────────────────────────────────────────────────
+    // TWIN PEAKS — 5×9, two wide areas connected by a single vertical gap
+    //
+    // A rectangular board divided neatly in half by a thick wall.
+    // The only way across is a single gap right in the middle.
+    // Build up forces safely, then flood through the chokepoint.
+    // Difficulty: Medium.
+    //
+    //  □ □ □ □ ■ □ □ □ □
+    //  □ □ □ □ ■ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □  ← single gap at x=4, y=2
+    //  □ □ □ □ ■ □ □ □ □
+    //  □ □ □ □ ■ □ □ □ □
+    {
+        id: 47,
+        name: "Twin Peaks",
+        description: "Two sprawling islands. One narrow bridge. Prepare for impact.",
+        rows: 5, cols: 9,
+        blockedCells: [
+            [4,0],[4,1],
+            [4,3],[4,4]
+        ],
+        presetOrbs: [
+            // Player — left side
+            { x: 1, y: 2, player: 0, count: 3 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 0, y: 3, player: 0, count: 2 },
+            // AI — right side
+            { x: 7, y: 2, player: 1, count: 3 },
+            { x: 8, y: 1, player: 1, count: 2 },
+            { x: 8, y: 3, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 48 ─────────────────────────────────────────────────────────
+    // DIAMOND MINE — 7×7, a central diamond block forcing a ring path
+    //
+    // The center is a tight diamond of blocked cells. The path around it is
+    // narrow — flanking the diamond is the only way to reach the enemy.
+    // Difficulty: Medium.
+    //
+    //  □ □ □ □ □ □ □
+    //  □ □ □ ■ □ □ □
+    //  □ □ ■ ■ ■ □ □
+    //  □ ■ ■ ■ ■ ■ □
+    //  □ □ ■ ■ ■ □ □
+    //  □ □ □ ■ □ □ □
+    //  □ □ □ □ □ □ □
+    {
+        id: 48,
+        name: "Diamond Mine",
+        description: "A massive obstacle in the middle. Flank around the edges!",
+        rows: 7, cols: 7,
+        blockedCells: [
+            [3,1],
+            [2,2],[3,2],[4,2],
+            [1,3],[2,3],[3,3],[4,3],[5,3],
+            [2,4],[3,4],[4,4],
+            [3,5]
+        ],
+        presetOrbs: [
+            // Player — top left corner
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 1, y: 0, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            // AI — bottom right corner
+            { x: 6, y: 6, player: 1, count: 1 },
+            { x: 5, y: 6, player: 1, count: 2 },
+            { x: 6, y: 5, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 49 ─────────────────────────────────────────────────────────
+    // THE CRATERS — 6×6, four symmetric single-cell blocks
+    //
+    // A relatively open board, but four strategically placed "craters"
+    // disrupt the standard rectangular flow. Chain reactions bounce
+    // unpredictably around these obstacles.
+    // Difficulty: Medium.
+    //
+    //  □ □ □ □ □ □
+    //  □ ■ □ □ ■ □
+    //  □ □ □ □ □ □
+    //  □ □ □ □ □ □
+    //  □ ■ □ □ ■ □
+    //  □ □ □ □ □ □
+    {
+        id: 49,
+        name: "The Craters",
+        description: "Four small blocks create huge waves of chaos. Watch your angles.",
+        rows: 6, cols: 6,
+        blockedCells: [
+            [1,1],[4,1],
+            [1,4],[4,4]
+        ],
+        presetOrbs: [
+            // Player — bottom edge
+            { x: 2, y: 5, player: 0, count: 2 },
+            { x: 3, y: 5, player: 0, count: 2 },
+            { x: 2, y: 4, player: 0, count: 3 },
+            // AI — top edge
+            { x: 2, y: 0, player: 1, count: 2 },
+            { x: 3, y: 0, player: 1, count: 2 },
+            { x: 3, y: 1, player: 1, count: 3 }
+        ]
+    },
+
+    // ── BOSS 6 ───────────────────────────────────────────────────────────
+    // THE SWARM — 9×9, AI starts with many small outposts scattered
+    //
+    // You have a single, very strong start in the corner. The AI has
+    // numerous single-orb presets scattered all over the board. If you
+    // let them build up, the swarm will overwhelm you. Strike fast.
+    // Difficulty: Boss.
+    {
+        id: 106, isBoss: true,
+        name: "The Swarm",
+        description: "The AI is everywhere. Crush the outposts before they multiply!",
+        rows: 9, cols: 9,
+        blockedCells: [],
+        presetOrbs: [
+            // Player — concentrated power in bottom left
+            { x: 0, y: 8, player: 0, count: 1 },
+            { x: 1, y: 8, player: 0, count: 2 },
+            { x: 0, y: 7, player: 0, count: 2 },
+            { x: 1, y: 7, player: 0, count: 3 },
+            // AI — scattered swarm
+            { x: 4, y: 4, player: 1, count: 2 },
+            { x: 2, y: 2, player: 1, count: 1 },
+            { x: 6, y: 2, player: 1, count: 1 },
+            { x: 8, y: 4, player: 1, count: 1 },
+            { x: 6, y: 6, player: 1, count: 1 },
+            { x: 4, y: 8, player: 1, count: 1 },
+            { x: 8, y: 0, player: 1, count: 1 }
+        ]
+    },
+
+    // ── LEVEL 50 ─────────────────────────────────────────────────────────
+    // FOUR ROOMS — 8×8, cross intersection with four tight doors
+    //
+    // The board is divided into four rooms. Walls form a cross with tiny
+    // gaps connecting the quadrants. Multi-front war — balance offense
+    // and defense across all four chambers.
+    // Difficulty: Hard.
+    //
+    //  □ □ □ ■ □ □ □ □
+    //  □ □ □ ■ □ □ □ □
+    //  □ □ □ □ □ □ □ □  ← gap at y=2
+    //  ■ ■ □ ■ ■ ■ □ ■
+    //  ■ □ ■ ■ ■ ■ □ ■
+    //  □ □ □ □ □ □ □ □  ← gap at y=5
+    //  □ □ □ ■ □ □ □ □
+    //  □ □ □ ■ □ □ □ □
+    {
+        id: 50,
+        name: "Four Rooms",
+        description: "Four chambers connected by narrow doors. Expand carefully.",
+        rows: 8, cols: 8,
+        blockedCells: [
+            // Vertical wall (x=3) with gaps at y=2, y=5
+            [3,0],[3,1],[3,3],[3,4],[3,6],[3,7],
+            // Horizontal wall (y=4) with gaps at x=1, x=6
+            [0,4],[2,4],[4,4],[5,4],[7,4]
+        ],
+        presetOrbs: [
+            // Player — top left room
+            { x: 1, y: 1, player: 0, count: 3 },
+            { x: 0, y: 0, player: 0, count: 1 },
+            // AI — bottom right room
+            { x: 6, y: 6, player: 1, count: 3 },
+            { x: 7, y: 7, player: 1, count: 1 }
+        ]
+    },
+
+    // ── LEVEL 51 ─────────────────────────────────────────────────────────
+    // PARALLEL LANES — 7×7, two vertical walls creating three long lanes
+    //
+    // The board is sliced into three vertical corridors. The only way to
+    // switch lanes is through tiny gaps at the very top and bottom.
+    // Linear progression — outflank the enemy.
+    // Difficulty: Hard.
+    //
+    //  □ □ □ □ □ □ □  ← top crossover
+    //  □ ■ □ □ □ ■ □
+    //  □ ■ □ □ □ ■ □
+    //  □ ■ □ □ □ ■ □
+    //  □ ■ □ □ □ ■ □
+    //  □ ■ □ □ □ ■ □
+    //  □ □ □ □ □ □ □  ← bottom crossover
+    {
+        id: 51,
+        name: "Parallel Lanes",
+        description: "Three strict lanes. Push forward, or flank through the ends!",
+        rows: 7, cols: 7,
+        blockedCells: [
+            [1,1],[1,2],[1,3],[1,4],[1,5],
+            [5,1],[5,2],[5,3],[5,4],[5,5]
+        ],
+        presetOrbs: [
+            // Player — left lane
+            { x: 0, y: 3, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 0, y: 5, player: 0, count: 2 },
+            // AI — right lane
+            { x: 6, y: 3, player: 1, count: 2 },
+            { x: 6, y: 1, player: 1, count: 2 },
+            { x: 6, y: 5, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 52 ─────────────────────────────────────────────────────────
+    // THE TRENCH — 5×7, jagged block pattern making an uneven frontline
+    //
+    // A compact board with a staggered diagonal set of blocks dividing
+    // the two sides. The frontline is messy and uneven.
+    // Difficulty: Hard.
+    //
+    //  □ □ □ ■ □ □ □
+    //  □ □ ■ □ □ □ □
+    //  □ ■ □ □ □ ■ □
+    //  □ □ □ □ ■ □ □
+    //  □ □ □ ■ □ □ □
+    {
+        id: 52,
+        name: "The Trench",
+        description: "An uneven, jagged frontline. Look for the weak spots!",
+        rows: 5, cols: 7,
+        blockedCells: [
+            [3,0],
+            [2,1],
+            [1,2],[5,2],
+            [4,3],
+            [3,4]
+        ],
+        presetOrbs: [
+            // Player — left side
+            { x: 0, y: 2, player: 0, count: 2 },
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 0, y: 4, player: 0, count: 1 },
+            // AI — right side
+            { x: 6, y: 2, player: 1, count: 2 },
+            { x: 6, y: 0, player: 1, count: 1 },
+            { x: 6, y: 4, player: 1, count: 1 }
+        ]
+    },
+
+    // ── LEVEL 53 ─────────────────────────────────────────────────────────
+    // THE VAULT — 7×7, a heavily protected inner square
+    //
+    // A central vault has only one entrance from below. Taking control
+    // gives immense power, but getting trapped inside is fatal.
+    // High risk / high reward territory control.
+    // Difficulty: Hard.
+    //
+    //  □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □
+    //  □ □ ■ ■ ■ □ □
+    //  □ □ ■ □ ■ □ □
+    //  □ □ ■ □ ■ □ □  ← vault entrance at bottom (open)
+    //  □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □
+    {
+        id: 53,
+        name: "The Vault",
+        description: "Control the inner sanctum to dominate the board, but don't get trapped!",
+        rows: 7, cols: 7,
+        blockedCells: [
+            [2,2],[3,2],[4,2],
+            [2,3],       [4,3],
+            [2,4],       [4,4]
+        ],
+        presetOrbs: [
+            // Player — bottom
+            { x: 3, y: 6, player: 0, count: 2 },
+            { x: 2, y: 6, player: 0, count: 2 },
+            { x: 4, y: 6, player: 0, count: 2 },
+            // AI — top, spreading toward the vault
+            { x: 3, y: 0, player: 1, count: 2 },
+            { x: 3, y: 1, player: 1, count: 3 },
+            { x: 2, y: 0, player: 1, count: 2 }
+        ]
+    },
+
+    // ── BOSS 7 ───────────────────────────────────────────────────────────
+    // GOLIATH — 10×10, AI has a fortified corner behind an L-wall
+    //
+    // A huge 10×10 board. The top right corner is protected by an L-shaped
+    // wall with a single narrow gap as the only entrance. Inside, the AI
+    // has highly loaded orbs ready to detonate. You start in the open.
+    // Break through the gap before the fortress explodes outward.
+    // Difficulty: Boss.
+    {
+        id: 107, isBoss: true,
+        name: "Goliath",
+        description: "A massive board. The AI is heavily fortified. Break the shield!",
+        rows: 10, cols: 10,
+        blockedCells: [
+            // L-wall protecting top right — gap at x=7,y=4 for narrow entrance
+            [6,0],[6,1],[6,2],[6,3],[6,4],
+            [8,4],[9,4]
+        ],
+        presetOrbs: [
+            // Player — bottom left, open area
+            { x: 0, y: 9, player: 0, count: 1 },
+            { x: 2, y: 8, player: 0, count: 3 },
+            { x: 3, y: 7, player: 0, count: 3 },
+            // AI — inside the Goliath fortress
+            { x: 9, y: 0, player: 1, count: 1 },
+            { x: 8, y: 1, player: 1, count: 3 },
+            { x: 7, y: 2, player: 1, count: 3 },
+            { x: 8, y: 2, player: 1, count: 3 },
+            { x: 9, y: 1, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 54 ─────────────────────────────────────────────────────────
+    // THE SNAKE — 7×7, a Z-shaped wall splitting the board into winding zones
+    //
+    // Blocked cells form a Z-pattern dividing the board into three
+    // winding zones connected only at (3,3) — the crossover point.
+    // No way around. Push straight through the corridor!
+    // Difficulty: Hard.
+    //
+    //  □ □ □ □ □ □ □    y=0 (all free)
+    //  □ □ □ □ ■ ■ ■    y=1 (right 3 blocked)
+    //  □ □ □ □ ■ ■ ■    y=2 (right 3 blocked)
+    //  ■ ■ ■ □ □ □ □    y=3 (left 3 blocked, passage at x=3)
+    //  ■ ■ ■ □ □ □ □    y=4 (left 3 blocked)
+    //  □ □ □ □ ■ ■ ■    y=5 (right 3 blocked)
+    //  □ □ □ □ □ □ □    y=6 (all free)
+    {
+        id: 54,
+        name: "The Snake",
+        description: "One winding Z-path divides the board. Navigate the bend to victory!",
+        rows: 7, cols: 7,
+        blockedCells: [
+            [4,1],[5,1],[6,1],
+            [4,2],[5,2],[6,2],
+            [0,3],[1,3],[2,3],
+            [0,4],[1,4],[2,4],
+            [4,5],[5,5],[6,5]
+        ],
+        presetOrbs: [
+            // Player — top left
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 1, y: 0, player: 0, count: 2 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            // AI — bottom right
+            { x: 6, y: 6, player: 1, count: 1 },
+            { x: 5, y: 6, player: 1, count: 2 },
+            { x: 4, y: 6, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 55 ─────────────────────────────────────────────────────────
+    // SNIPER ALLEY — 9×5, wide map with long horizontal sightlines
+    //
+    // Very wide and short. Several horizontal walls create long "sniper"
+    // lanes. Chains race from left to right at high speeds.
+    // Difficulty: Hard.
+    //
+    //  □ □ □ □ □ □ □ □ □
+    //  □ ■ ■ □ ■ ■ □ ■ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ ■ □ ■ ■ □ ■ ■ □
+    //  □ □ □ □ □ □ □ □ □
+    {
+        id: 55,
+        name: "Sniper Alley",
+        description: "Long horizontal lanes. Reactions will travel at breakneck speeds.",
+        rows: 5, cols: 9,
+        blockedCells: [
+            [1,1],[2,1],[4,1],[5,1],[7,1],
+            [1,3],[3,3],[4,3],[6,3],[7,3]
+        ],
+        presetOrbs: [
+            // Player — far left
+            { x: 0, y: 2, player: 0, count: 3 },
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 0, y: 4, player: 0, count: 1 },
+            // AI — far right
+            { x: 8, y: 2, player: 1, count: 3 },
+            { x: 8, y: 0, player: 1, count: 1 },
+            { x: 8, y: 4, player: 1, count: 1 }
+        ]
+    },
+
+    // ── LEVEL 56 ─────────────────────────────────────────────────────────
+    // SWISS CHEESE — 8×8, heavily peppered with 1×1 blocks
+    //
+    // No large walls, just a massive amount of scattered 1×1 blocks.
+    // This dramatically alters effective capacity. A cell that looks
+    // interior might only be an edge due to blocked neighbors.
+    // Difficulty: Hard.
+    {
+        id: 56,
+        name: "Swiss Cheese",
+        description: "Scattered blocks everywhere. Check your cell capacities carefully!",
+        rows: 8, cols: 8,
+        blockedCells: [
+            [1,1],[3,1],[6,1],
+            [2,3],[5,3],[7,3],
+            [0,4],[4,4],
+            [1,6],[3,6],[6,6]
+        ],
+        presetOrbs: [
+            // Player — bottom left
+            { x: 0, y: 7, player: 0, count: 1 },
+            { x: 1, y: 7, player: 0, count: 2 },
+            { x: 2, y: 7, player: 0, count: 2 },
+            // AI — top right
+            { x: 7, y: 0, player: 1, count: 1 },
+            { x: 6, y: 0, player: 1, count: 2 },
+            { x: 5, y: 0, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 57 ─────────────────────────────────────────────────────────
+    // ASYMMETRY — 8×7, uneven terrain with a heavy defensive bias
+    //
+    // The player starts in a wide open area. The AI starts in a highly
+    // fortified structure. Spatial superiority vs entrenched defense.
+    // Difficulty: Hard.
+    //
+    //  □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □
+    //  □ □ □ ■ ■ ■ □
+    //  □ ■ □ □ □ ■ □
+    //  □ ■ □ ■ □ ■ □
+    //  □ ■ □ ■ □ ■ □
+    //  □ ■ ■ ■ ■ ■ □
+    {
+        id: 57,
+        name: "Asymmetry",
+        description: "You have the open field. The enemy has the fortress. Break them.",
+        rows: 8, cols: 7,
+        blockedCells: [
+            [3,3],[4,3],[5,3],
+            [1,4],[5,4],
+            [1,5],[3,5],[5,5],
+            [1,6],[3,6],[5,6],
+            [1,7],[2,7],[3,7],[4,7],[5,7]
+        ],
+        presetOrbs: [
+            // Player — top open field
+            { x: 3, y: 1, player: 0, count: 3 },
+            { x: 2, y: 0, player: 0, count: 2 },
+            { x: 4, y: 0, player: 0, count: 2 },
+            // AI — inside the bunker
+            { x: 2, y: 5, player: 1, count: 2 },
+            { x: 4, y: 5, player: 1, count: 2 },
+            { x: 2, y: 6, player: 1, count: 2 }
+        ]
+    },
+
+    // ── BOSS 8 ───────────────────────────────────────────────────────────
+    // GAUNTLET — 10×6, player must run a gauntlet of AI preset orbs
+    //
+    // A long horizontal corridor filled with small vertical walls. The AI
+    // has preset orbs waiting behind every wall like an ambush.
+    // Difficulty: Boss.
+    {
+        id: 108, isBoss: true,
+        name: "Gauntlet",
+        description: "Run the gauntlet. The enemy is waiting in the shadows.",
+        rows: 6, cols: 10,
+        blockedCells: [
+            [2,0],[2,1],
+            [4,4],[4,5],
+            [6,0],[6,1],
+            [8,4],[8,5]
+        ],
+        presetOrbs: [
+            // Player — start of gauntlet
+            { x: 0, y: 2, player: 0, count: 2 },
+            { x: 0, y: 3, player: 0, count: 2 },
+            { x: 1, y: 2, player: 0, count: 3 },
+            // AI — lurking behind walls
+            { x: 3, y: 1, player: 1, count: 2 },
+            { x: 5, y: 4, player: 1, count: 2 },
+            { x: 7, y: 1, player: 1, count: 2 },
+            { x: 9, y: 4, player: 1, count: 2 },
+            { x: 9, y: 2, player: 1, count: 1 }
+        ]
+    },
+
+    // ── LEVEL 58 ─────────────────────────────────────────────────────────
+    // DOUBLE BYPASS — 8×8, massive central block forcing two thin outer lanes
+    //
+    // The entire center is dead space. Players must send chain reactions
+    // down the top lane or the bottom lane.
+    // Fighting on two completely disconnected fronts.
+    // Difficulty: Expert.
+    //
+    //  □ □ □ □ □ □ □ □
+    //  □ ■ ■ ■ ■ ■ ■ □
+    //  □ ■ ■ ■ ■ ■ ■ □
+    //  □ ■ ■ ■ ■ ■ ■ □
+    //  □ ■ ■ ■ ■ ■ ■ □
+    //  □ ■ ■ ■ ■ ■ ■ □
+    //  □ ■ ■ ■ ■ ■ ■ □
+    //  □ □ □ □ □ □ □ □
+    {
+        id: 58,
+        name: "Double Bypass",
+        description: "A giant void in the center. Choose your lane and hold the line.",
+        rows: 8, cols: 8,
+        blockedCells: [
+            [1,1],[2,1],[3,1],[4,1],[5,1],[6,1],
+            [1,2],[2,2],[3,2],[4,2],[5,2],[6,2],
+            [1,3],[2,3],[3,3],[4,3],[5,3],[6,3],
+            [1,4],[2,4],[3,4],[4,4],[5,4],[6,4],
+            [1,5],[2,5],[3,5],[4,5],[5,5],[6,5],
+            [1,6],[2,6],[3,6],[4,6],[5,6],[6,6]
+        ],
+        presetOrbs: [
+            // Player — top rim
+            { x: 3, y: 0, player: 0, count: 2 },
+            { x: 4, y: 0, player: 0, count: 2 },
+            { x: 0, y: 0, player: 0, count: 1 },
+            // AI — bottom rim
+            { x: 3, y: 7, player: 1, count: 2 },
+            { x: 4, y: 7, player: 1, count: 2 },
+            { x: 7, y: 7, player: 1, count: 1 }
+        ]
+    },
+
+    // ── LEVEL 59 ─────────────────────────────────────────────────────────
+    // CRESCENT — 8×8, a moon-shaped playable area
+    //
+    // A huge chunk of the bottom-right board is missing, creating a
+    // crescent moon shape. The board curves sharply.
+    // Asymmetrical cornering, curved wavefronts.
+    // Difficulty: Expert.
+    {
+        id: 59,
+        name: "Crescent",
+        description: "The board curves away. Push them to the edge of the moon!",
+        rows: 8, cols: 8,
+        blockedCells: [
+            [7,2],
+            [6,3],[7,3],
+            [5,4],[6,4],[7,4],
+            [4,5],[5,5],[6,5],[7,5],
+            [3,6],[4,6],[5,6],[6,6],[7,6],
+            [2,7],[3,7],[4,7],[5,7],[6,7],[7,7]
+        ],
+        presetOrbs: [
+            // Player — top left (thickest part of crescent)
+            { x: 1, y: 1, player: 0, count: 3 },
+            { x: 0, y: 1, player: 0, count: 2 },
+            { x: 1, y: 0, player: 0, count: 2 },
+            // AI — tips of the crescent
+            { x: 0, y: 6, player: 1, count: 2 },
+            { x: 6, y: 0, player: 1, count: 2 },
+            { x: 7, y: 0, player: 1, count: 1 }
+        ]
+    },
+
+    // ── LEVEL 60 ─────────────────────────────────────────────────────────
+    // THE MOAT — 9×9, a center island surrounded by a 1-cell moat
+    //
+    // The center is a 3×3 island, accessible only by four single-cell
+    // bridges. An extremely tactical control-point map.
+    // Difficulty: Expert.
+    //
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ ■ ■ □ ■ ■ □ □
+    //  □ □ ■ □ □ □ ■ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ ■ □ □ □ ■ □ □
+    //  □ □ ■ ■ □ ■ ■ □ □
+    //  □ □ □ □ □ □ □ □ □
+    //  □ □ □ □ □ □ □ □ □
+    {
+        id: 60,
+        name: "The Moat",
+        description: "An island in the center with four bridges. Claim the fortress!",
+        rows: 9, cols: 9,
+        blockedCells: [
+            [2,2],[3,2],      [5,2],[6,2],
+            [2,3],                  [6,3],
+
+            [2,5],                  [6,5],
+            [2,6],[3,6],      [5,6],[6,6]
+        ],
+        presetOrbs: [
+            // Player — bottom left exterior
+            { x: 1, y: 7, player: 0, count: 3 },
+            { x: 0, y: 8, player: 0, count: 1 },
+            { x: 2, y: 8, player: 0, count: 2 },
+            // AI — top right exterior
+            { x: 7, y: 1, player: 1, count: 3 },
+            { x: 8, y: 0, player: 1, count: 1 },
+            { x: 6, y: 0, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 61 ─────────────────────────────────────────────────────────
+    // RAZOR EDGE — 6×10, alternating staggered walls across a long board
+    //
+    // Wide and brutal. The middle is filled with alternating upper and
+    // lower walls, forcing a zigzag march across a long distance.
+    // Trench warfare — agonizingly slow pushes.
+    // Difficulty: Expert.
+    {
+        id: 61,
+        name: "Razor Edge",
+        description: "A grueling march across alternating walls. Don't lose momentum.",
+        rows: 6, cols: 10,
+        blockedCells: [
+            [2,0],[2,1],[2,2],[2,3],
+            [5,2],[5,3],[5,4],[5,5],
+            [7,0],[7,1],[7,2],[7,3]
+        ],
+        presetOrbs: [
+            // Player — far left
+            { x: 0, y: 2, player: 0, count: 2 },
+            { x: 0, y: 3, player: 0, count: 2 },
+            { x: 1, y: 2, player: 0, count: 3 },
+            // AI — far right
+            { x: 9, y: 2, player: 1, count: 2 },
+            { x: 9, y: 3, player: 1, count: 2 },
+            { x: 8, y: 3, player: 1, count: 3 }
+        ]
+    },
+
+    // ── BOSS 9 ───────────────────────────────────────────────────────────
+    // CHECKMATE — 10×10, complex symmetry, high tension presets
+    //
+    // The ultimate test. A giant board with a gorgeous, symmetrical wall
+    // pattern. Both sides start with highly volatile, near-critical chains
+    // ready to fire. One mistake loses the game instantly.
+    // Difficulty: Boss.
+    {
+        id: 109, isBoss: true,
+        name: "Checkmate",
+        description: "The grand finale. Both sides are fully armed. One wrong move is death.",
+        rows: 10, cols: 10,
+        blockedCells: [
+            [2,2],[3,2],[6,2],[7,2],
+            [2,3],[7,3],
+            [4,4],[5,4],
+            [4,5],[5,5],
+            [2,6],[7,6],
+            [2,7],[3,7],[6,7],[7,7]
+        ],
+        presetOrbs: [
+            // Player — top hemisphere
+            { x: 4, y: 0, player: 0, count: 2 },
+            { x: 5, y: 0, player: 0, count: 2 },
+            { x: 4, y: 1, player: 0, count: 3 },
+            { x: 5, y: 1, player: 0, count: 3 },
+            { x: 2, y: 1, player: 0, count: 2 },
+            { x: 7, y: 1, player: 0, count: 2 },
+            // AI — bottom hemisphere
+            { x: 4, y: 9, player: 1, count: 2 },
+            { x: 5, y: 9, player: 1, count: 2 },
+            { x: 4, y: 8, player: 1, count: 3 },
+            { x: 5, y: 8, player: 1, count: 3 },
+            { x: 2, y: 8, player: 1, count: 2 },
+            { x: 7, y: 8, player: 1, count: 2 }
         ]
     }
 

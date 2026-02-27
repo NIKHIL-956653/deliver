@@ -37,7 +37,7 @@ let rows = 9, cols = 9, players = [], playerTypes = [];
 let current = 0, board = [], playing = true, firstMove = [], history = [];
 let scores = [], movesMade = 0, mode = "normal", timer = null;
 let timeLimit = 120, timeLeft = timeLimit;
-let aiTimeout = null, hintsRemaining = 3, lastMove = null;
+let aiTimeout = null, hintsRemaining = 1000, lastMove = null; // TODO: set to 3 before release
 let aiWorker = null, aiMoveId = 0;
 let sagaCurrentLevel = 0;
 let sagaConsecutiveFails = 0;
@@ -688,7 +688,7 @@ function resetGame() {
   }
 
   lastMove = null;
-  hintsRemaining = 3;
+  hintsRemaining = 1000; // TODO: set to 3 before release
   updateHintCount();
   updateStatus();
   updateScores();
@@ -711,7 +711,7 @@ function initSagaLevel(level) {
   movesMade = 0;
   history = [];
   lastMove = null;
-  hintsRemaining = 3;
+  hintsRemaining = 1000; // TODO: set to 3 before release
   hintsUsed = 0;
 
   const aiDiff = document.getElementById("sagaAiDifficultySelect")?.value || "hard";
@@ -1258,7 +1258,7 @@ function showLevelSelect() {
 
     const isCompleted = i < saved;
     const isCurrent   = i === saved;
-    const isLocked    = i > saved;
+    const isLocked    = false; // TODO: re-enable before release: i > saved
 
     if (isCompleted)    btn.classList.add("completed");
     else if (isCurrent) btn.classList.add("current");
