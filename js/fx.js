@@ -227,6 +227,52 @@ export function spawnVoidCollapse(x, y, color) {
     }, 80);
 }
 
+// ── MEGA BLAST — auto-fires on 13+ orb chain reactions ───────────────────────
+// Five escalating rings + double shake + massive particle burst from board center.
+export function spawnMegaBlast(x, y, color) {
+    // Phase 1: nuke-level white overload flash
+    flashOverlay.style.backgroundColor = 'white';
+    flashOverlay.style.opacity = '0.85';
+    setTimeout(() => { flashOverlay.style.opacity = '0'; }, 200);
+
+    // Phase 1b: immediate board shake
+    triggerShake();
+
+    // Phase 2: 5 staggered rings — bigger, faster, slower-decaying than shockwave
+    const ringConfig = [
+        { delay: 0,   color: '#ffffff', width: 5,   speed: 7,   decay: 0.020 },
+        { delay: 60,  color: color,     width: 4,   speed: 9,   decay: 0.024 },
+        { delay: 120, color: '#ffffff', width: 3,   speed: 11,  decay: 0.028 },
+        { delay: 180, color: color,     width: 2,   speed: 13,  decay: 0.032 },
+        { delay: 240, color: '#88eeff', width: 1.5, speed: 16,  decay: 0.038 },
+    ];
+    ringConfig.forEach(c => {
+        setTimeout(() => {
+            rings.push({ x, y, r: 6, speed: c.speed, width: c.width, color: c.color, life: 1.0, decay: c.decay });
+        }, c.delay);
+    });
+
+    // Phase 3: massive particle burst — 40 desktop / 20 mobile
+    const count = isMobile ? 20 : 40;
+    const colors = [color, color, '#ffffff', '#ffffff', '#ffffff', '#88eeff', '#88eeff'];
+    for (let i = 0; i < count; i++) {
+        const angle = (i / count) * Math.PI * 2 + Math.random() * 0.4;
+        const vel = 6 + Math.random() * 8;
+        particles.push({
+            x, y,
+            vx: Math.cos(angle) * vel,
+            vy: Math.sin(angle) * vel,
+            size: (isMobile ? 4 : 7) + Math.random() * 5,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            life: 1.0,
+            decay: 0.010 + Math.random() * 0.008
+        });
+    }
+
+    // Phase 4: second shake 150ms later — double rumble for weight
+    setTimeout(() => triggerShake(), 150);
+}
+
 // Victory screen handles Matrix, Cyber, and Magma
 export function startCelebration() {
     const isCyber = document.body.classList.contains('theme-cyberpunk');

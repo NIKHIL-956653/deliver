@@ -4,7 +4,7 @@ import { playSound, toggleMute } from "./sound.js";
 import { capacity, neighbors, drawCell } from "./board.js";
 import { buildPlayerSettings } from "./player.js";
 import { makeAIMove, getProfessionalHint } from "./ai.js";
-import { spawnParticles, spawnShockwave, spawnVoidCollapse, triggerShake, triggerFlash, triggerGlitch, triggerHeat, startCelebration, setBackgroundPulse } from "./fx.js";
+import { spawnParticles, spawnShockwave, spawnVoidCollapse, spawnMegaBlast, triggerShake, triggerFlash, triggerGlitch, triggerHeat, startCelebration, setBackgroundPulse } from "./fx.js";
 import { recordGameEnd, tryUnlockAchievement, loadData, saveTheme, getSavedTheme,
          isDailyCompleted, completeDailyChallenge, getDailyStreak,
          saveLevelStars, getLevelStars, getAllLevelStars,
@@ -869,6 +869,7 @@ async function resolveReactions() {
   const sleep = ms => new Promise(r => requestAnimationFrame(() => setTimeout(r, ms)));
   let loops = 0;
   let waveCount = 0;
+  let totalBlast = 0;
 
   // Increased loop limit slightly, but increased speed dramatically
   while (q.length && loops++ < 1000) {
@@ -884,6 +885,7 @@ async function resolveReactions() {
     const wave = [...new Set(q.map(([x, y]) => `${x},${y}`))]
       .map(s => s.split(",").map(Number));
 
+    totalBlast += wave.length;
     q.length = 0;
 
     for (const [x, y] of wave) {
@@ -927,6 +929,10 @@ async function resolveReactions() {
   }
 
   if (waveCount >= 3) showComboFlash(waveCount);
+  if (totalBlast >= 13) {
+    const br = boardEl.getBoundingClientRect();
+    spawnMegaBlast(br.left + br.width / 2, br.top + br.height / 2, players[current].color);
+  }
 }
 
 function updateScores() {
