@@ -261,7 +261,7 @@ function openSidebar() {
     document.getElementById("magmaSidebarControls").style.display = "block";
 
   // Sync sidebar theme dropdown with current theme
-  const current = ["theme-matrix","theme-cyberpunk","theme-magma","theme-electric","theme-ice","theme-void","theme-minimal"]
+  const current = ["theme-matrix","theme-cyberpunk","theme-magma","theme-electric","theme-ice","theme-void","theme-minimal","theme-flatline","theme-steampunk"]
     .find(c => document.body.classList.contains(c)) || "default";
   const sidebarThemeSelect = document.getElementById("sidebarThemeSelect");
   if (sidebarThemeSelect) sidebarThemeSelect.value = current;
@@ -271,6 +271,7 @@ function applyTheme(t) {
   document.body.classList.remove(
     "theme-cyberpunk", "theme-magma", "theme-matrix",
     "theme-electric", "theme-ice", "theme-void", "theme-minimal",
+    "theme-flatline", "theme-steampunk",
     "scanlines-active", "lava-active"
   );
 
@@ -292,7 +293,7 @@ function applyTheme(t) {
       lavaRainSettings.rainOn = true;
       drawMagma();
     }
-  } else if (["theme-electric", "theme-ice", "theme-void", "theme-minimal"].includes(t)) {
+  } else if (["theme-electric","theme-ice","theme-void","theme-minimal","theme-flatline","theme-steampunk"].includes(t)) {
     document.body.classList.add(t);
   }
 }

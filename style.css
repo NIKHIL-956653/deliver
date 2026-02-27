@@ -1265,6 +1265,183 @@ body.theme-minimal h1,
 body.theme-minimal .combo-flash { text-shadow: none !important; }
 body.theme-minimal .cell.blocked { background: #d6d2ca !important; border-color: #bfb9b0 !important; }
 
+/* ── FLATLINE THEME (new) ────────────────────────────────────────────────── */
+body.theme-flatline {
+    --primary:      #ff2d55;
+    --glow:         #ff2d5538;
+    --board-bg:     rgba(8, 3, 20, 0.96);
+    --cell-bg:      rgba(15, 5, 30, 0.92);
+    --border-color: #ffffff12;
+    background: #0a0014 !important;
+}
+body.theme-flatline, body.theme-flatline .screen,
+body.theme-flatline #mainMenu, body.theme-flatline #gameView {
+    background: #0a0014 !important;
+}
+body.theme-flatline #mainMenu { background: transparent !important; }
+/* Crimson sky bleeds from top, electric blue rises from bottom */
+body.theme-flatline::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+        radial-gradient(ellipse 110% 55% at 50% 0%,   rgba(160,0,40,0.50) 0%, transparent 100%),
+        radial-gradient(ellipse 110% 45% at 50% 100%,  rgba(10,50,200,0.38) 0%, transparent 100%);
+}
+/* City skyline silhouette */
+body.theme-flatline::after {
+    content: '';
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 26vh;
+    pointer-events: none;
+    z-index: 1;
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 160' preserveAspectRatio='xMidYMax slice'%3E%3Crect x='0'   y='110' width='22'  height='50'  fill='%230a0014'/%3E%3Crect x='26'  y='75'  width='38'  height='85'  fill='%230a0014'/%3E%3Crect x='68'  y='120' width='18'  height='40'  fill='%230a0014'/%3E%3Crect x='90'  y='88'  width='32'  height='72'  fill='%230a0014'/%3E%3Crect x='126' y='125' width='14'  height='35'  fill='%230a0014'/%3E%3Crect x='144' y='60'  width='48'  height='100' fill='%230a0014'/%3E%3Crect x='196' y='100' width='28'  height='60'  fill='%230a0014'/%3E%3Crect x='228' y='80'  width='42'  height='80'  fill='%230a0014'/%3E%3Crect x='274' y='130' width='18'  height='30'  fill='%230a0014'/%3E%3Crect x='296' y='50'  width='56'  height='110' fill='%230a0014'/%3E%3Crect x='356' y='115' width='22'  height='45'  fill='%230a0014'/%3E%3Crect x='382' y='78'  width='38'  height='82'  fill='%230a0014'/%3E%3Crect x='424' y='130' width='18'  height='30'  fill='%230a0014'/%3E%3Crect x='446' y='90'  width='32'  height='70'  fill='%230a0014'/%3E%3Crect x='482' y='65'  width='52'  height='95'  fill='%230a0014'/%3E%3Crect x='538' y='120' width='18'  height='40'  fill='%230a0014'/%3E%3Crect x='560' y='82'  width='42'  height='78'  fill='%230a0014'/%3E%3Crect x='606' y='105' width='28'  height='55'  fill='%230a0014'/%3E%3Crect x='638' y='42'  width='62'  height='118' fill='%230a0014'/%3E%3Crect x='704' y='118' width='26'  height='42'  fill='%230a0014'/%3E%3Crect x='734' y='78'  width='40'  height='82'  fill='%230a0014'/%3E%3Crect x='778' y='108' width='22'  height='52'  fill='%230a0014'/%3E%3C/svg%3E")
+        bottom / 100% auto no-repeat;
+}
+body.theme-flatline .board {
+    background: rgba(8, 3, 20, 0.97) !important;
+    border: 1px solid #ff2d5518 !important;
+    box-shadow: 0 0 50px #ff2d5518, 0 0 50px #1a4fff14 !important;
+    animation: flatline-breathe 3.5s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+}
+/* Crimson scanline texture on board */
+body.theme-flatline .board::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: repeating-linear-gradient(
+        0deg, transparent 0px, transparent 3px,
+        rgba(255,45,85,0.016) 3px, rgba(255,45,85,0.016) 4px
+    );
+}
+@keyframes flatline-breathe {
+    0%, 100% { box-shadow: 0 0 45px #ff2d551a, 0 0 25px #1a4fff0e; }
+    50%       { box-shadow: 0 0 25px #ff2d550e, 0 0 55px #1a4fff1e; }
+}
+/* Dark purple tiles */
+body.theme-flatline .cell:not(.blocked) {
+    border-radius: 4px !important;
+    border: 1px solid #ffffff10 !important;
+    background: rgba(15, 5, 30, 0.92) !important;
+}
+/* Owned: alternating red-blue inner glow cycle */
+body.theme-flatline .cell.owned {
+    border-color: #ff2d5555 !important;
+    background: rgba(22, 6, 38, 0.96) !important;
+    box-shadow: 0 0 14px rgba(255,45,85,0.16) inset !important;
+    animation: flatline-owned 3s ease-in-out infinite !important;
+}
+@keyframes flatline-owned {
+    0%, 100% { box-shadow: 0 0 14px rgba(255,45,85,0.18) inset; border-color: #ff2d5550; }
+    50%       { box-shadow: 0 0 14px rgba(26,79,255,0.18) inset;  border-color: #1a4fff50; }
+}
+/* Near-cap: flatline alert — rapid red/blue strobe */
+body.theme-flatline .cell.pulse {
+    animation: flatline-critical 0.55s ease-in-out infinite !important;
+}
+@keyframes flatline-critical {
+    0%, 100% { box-shadow: 0 0 22px #ff2d55 inset; border-color: #ff2d55; }
+    50%       { box-shadow: 0 0 22px #1a4fff inset; border-color: #4d79ff; }
+}
+body.theme-flatline .cell.blocked { background: rgba(5,0,15,0.95) !important; border-color: #0f0520 !important; }
+
+/* ── CLOCKWORK STEAMPUNK THEME (new) ─────────────────────────────────────── */
+body.theme-steampunk {
+    --primary:      #d4a44c;
+    --glow:         #c87941;
+    --board-bg:     rgba(12, 9, 4, 0.97);
+    --cell-bg:      #7a5818;
+    --border-color: #c8794166;
+    background: #080604 !important;
+}
+body.theme-steampunk, body.theme-steampunk .screen,
+body.theme-steampunk #mainMenu, body.theme-steampunk #gameView {
+    background: #080604 !important;
+}
+body.theme-steampunk #mainMenu { background: radial-gradient(circle at center, #1a1004 0%, #000 100%) !important; }
+body.theme-steampunk h1 { color: #d4a44c; text-shadow: 0 0 12px #c87941; }
+/* Furnace warm glow from bottom-right */
+body.theme-steampunk::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+        radial-gradient(ellipse 55% 45% at 100% 100%, rgba(200,90,15,0.22) 0%, transparent 100%),
+        radial-gradient(ellipse 40% 30% at 0%   0%,   rgba(180,130,20,0.08) 0%, transparent 100%);
+}
+/* Dark iron board with warm glow */
+body.theme-steampunk .board {
+    background: rgba(12, 9, 4, 0.97) !important;
+    border: 2px solid #7a5a1a !important;
+    box-shadow: 0 0 35px #c8794122, inset 0 0 50px rgba(0,0,0,0.82) !important;
+    animation: steam-board 4s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+}
+/* Large rotating gear watermark */
+body.theme-steampunk .board::before {
+    content: '';
+    position: absolute;
+    width: 170px; height: 170px;
+    bottom: -35px; right: -35px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.09;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='38' fill='none' stroke='%23c87941' stroke-width='4'/%3E%3Ccircle cx='50' cy='50' r='20' fill='none' stroke='%23c87941' stroke-width='3'/%3E%3Ccircle cx='50' cy='50' r='7' fill='%23c87941'/%3E%3Crect x='46' y='5'  width='8' height='14' rx='2' fill='%23c87941'/%3E%3Crect x='46' y='81' width='8' height='14' rx='2' fill='%23c87941'/%3E%3Crect x='5'  y='46' width='14' height='8' rx='2' fill='%23c87941'/%3E%3Crect x='81' y='46' width='14' height='8' rx='2' fill='%23c87941'/%3E%3Crect x='16' y='16' width='8' height='14' rx='2' fill='%23c87941' transform='rotate(45 20 23)'/%3E%3Crect x='76' y='16' width='8' height='14' rx='2' fill='%23c87941' transform='rotate(-45 80 23)'/%3E%3Crect x='16' y='76' width='8' height='14' rx='2' fill='%23c87941' transform='rotate(-45 20 83)'/%3E%3Crect x='76' y='76' width='8' height='14' rx='2' fill='%23c87941' transform='rotate(45 80 83)'/%3E%3C/svg%3E");
+    animation: gear-spin 14s linear infinite;
+}
+@keyframes steam-board {
+    0%, 100% { box-shadow: 0 0 28px #c8794118, inset 0 0 50px rgba(0,0,0,0.82); }
+    50%       { box-shadow: 0 0 48px #d4a44c30, inset 0 0 50px rgba(0,0,0,0.82); }
+}
+@keyframes gear-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+/* Octagonal brass tiles — engineered panel look */
+body.theme-steampunk .cell:not(.blocked) {
+    clip-path: polygon(18% 0%, 82% 0%, 100% 18%, 100% 82%, 82% 100%, 18% 100%, 0% 82%, 0% 18%) !important;
+    border-radius: 0 !important;
+    border: 2px solid #9a7030 !important;
+    background: radial-gradient(ellipse at 28% 22%, #d4a84b 0%, #9a7220 55%, #6a4e10 100%) !important;
+}
+/* Owned tiles: brighter brass + amber border glow */
+body.theme-steampunk .cell.owned {
+    border-color: #ffcc66 !important;
+    background: radial-gradient(ellipse at 28% 22%, #e8c060 0%, #b08830 52%, #7a5c15 100%) !important;
+    box-shadow: 0 0 16px #ffcc6632 inset, 0 0 6px #c8794140 !important;
+    animation: steam-owned 3.5s ease-in-out infinite !important;
+}
+@keyframes steam-owned {
+    0%, 100% { box-shadow: 0 0 12px #ffcc6625 inset; }
+    50%       { box-shadow: 0 0 26px #ffcc6650 inset, 0 0 8px #d4a44c; }
+}
+/* Near-cap: pressure overload — white-hot brass flash */
+body.theme-steampunk .cell.pulse {
+    border-color: #fff8d0 !important;
+    box-shadow: 0 0 22px #ffdd88 inset !important;
+    animation: steam-pressure 0.65s ease-in-out infinite !important;
+}
+@keyframes steam-pressure {
+    0%, 100% { box-shadow: 0 0 16px #ffcc66 inset; filter: brightness(1); }
+    50%       { box-shadow: 0 0 34px #fff8d0 inset, 0 0 14px #ffcc66; filter: brightness(1.5); }
+}
+body.theme-steampunk .cell.blocked {
+    clip-path: polygon(18% 0%, 82% 0%, 100% 18%, 100% 82%, 82% 100%, 18% 100%, 0% 82%, 0% 18%) !important;
+    background: rgba(18,12,4,0.94) !important;
+    border-color: #3a2808 !important;
+}
+
 /* ── MOBILE BOARD POLISH ─────────────────────────────────────────────────── */
 /* Push board to top (remove centering gap) and tighten HUD spacing on mobile */
 @media (max-width: 600px) {
