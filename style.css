@@ -855,6 +855,416 @@ body.skin-electric .orb::after {
     50%       { box-shadow: 0 0 28px #ff4757; }
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   FULL VISUAL IDENTITY THEMES
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── CYBERPUNK ENHANCEMENTS ──────────────────────────────────────────────── */
+body.theme-cyberpunk .board {
+    background: rgba(14, 6, 14, 0.97) !important;
+    background-image:
+        repeating-linear-gradient(0deg,  rgba(0,240,255,0.035) 0px, transparent 1px, transparent 22px),
+        repeating-linear-gradient(90deg, rgba(0,240,255,0.035) 0px, transparent 1px, transparent 22px) !important;
+    border: 1px solid #00f0ff2a !important;
+    box-shadow: 0 0 32px #00f0ff1a, inset 0 0 50px rgba(0,0,0,0.65) !important;
+}
+/* Chamfered tiles as default (whole theme, not just hud-sharp toggle) */
+body.theme-cyberpunk .cell:not(.blocked):not(body.theme-cyberpunk.hud-sharp .cell) {
+    clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%);
+    border-radius: 0 !important;
+    border-width: 1px;
+}
+/* Owned: cyan with horizontal scan line sweep */
+body.theme-cyberpunk .cell.owned {
+    border-color: #00f0ff !important;
+    background-image: linear-gradient(90deg, transparent 0%, rgba(0,240,255,0.10) 50%, transparent 100%) !important;
+    background-size: 200% 100%;
+    animation: cyber-scan 2.8s linear infinite !important;
+}
+@keyframes cyber-scan {
+    0%   { background-position: -200% 0; box-shadow: 0 0 8px #00f0ff30 inset; }
+    50%  { background-position: 0% 0;    box-shadow: 0 0 16px #00f0ff60 inset; }
+    100% { background-position: 200% 0;  box-shadow: 0 0 8px #00f0ff30 inset; }
+}
+/* Near-cap: magenta danger */
+body.theme-cyberpunk .cell.pulse {
+    border-color: #ff00aa !important;
+    box-shadow: 0 0 14px #ff00aa inset, 0 0 8px #ff00aa55 !important;
+    animation: cyber-danger 0.55s ease-in-out infinite !important;
+}
+@keyframes cyber-danger {
+    0%, 100% { box-shadow: 0 0 8px #ff00aa inset; }
+    50%       { box-shadow: 0 0 22px #ff00aa inset, 0 0 12px #ff00aa; }
+}
+
+/* ── MAGMA ENHANCEMENTS ──────────────────────────────────────────────────── */
+/* Board gap becomes glowing lava */
+body.theme-magma .board {
+    background: radial-gradient(ellipse at center, #3d1200 0%, #1a0500 50%, #0f0200 100%) !important;
+    gap: 5px !important;
+    border: 1px solid #ff450028 !important;
+    box-shadow: 0 0 40px #ff330030, inset 0 0 70px rgba(0,0,0,0.75) !important;
+    position: relative;
+    overflow: hidden;
+}
+/* Basalt-feel tiles */
+body.theme-magma .cell:not(.blocked) {
+    border-radius: 4px !important;
+    border: 1.5px solid #ff450028 !important;
+    background: rgba(28, 8, 0, 0.93) !important;
+}
+/* Owned: molten amber inner glow */
+body.theme-magma .cell.owned {
+    border-color: #ff6600 !important;
+    background: rgba(48, 12, 0, 0.96) !important;
+    box-shadow: 0 0 18px #ff450040 inset, 0 0 5px #ff450030 !important;
+    animation: magma-pulse 2.2s ease-in-out infinite !important;
+}
+@keyframes magma-pulse {
+    0%, 100% { box-shadow: 0 0 12px #ff3300 inset; }
+    50%       { box-shadow: 0 0 26px #ff6600 inset, 0 0 7px #ff4500; }
+}
+/* Near-cap: white-hot */
+body.theme-magma .cell.pulse {
+    border-color: #ffcc00 !important;
+    box-shadow: 0 0 22px #ff6600 inset, 0 0 10px #ff450055 !important;
+    animation: magma-danger 0.5s ease-in-out infinite !important;
+}
+@keyframes magma-danger {
+    0%, 100% { filter: brightness(1); }
+    50%       { filter: brightness(1.45); }
+}
+/* 3 floating ember dots */
+body.theme-magma .board::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+        radial-gradient(circle 2px at 18% 95%, #ff6600cc, transparent 100%),
+        radial-gradient(circle 1.5px at 60% 98%, #ff4500aa, transparent 100%),
+        radial-gradient(circle 2px at 82% 93%, #ffaa00cc, transparent 100%);
+    animation: ember-rise 5s ease-in-out infinite;
+}
+@keyframes ember-rise {
+    0%   { background-position: 0 0,   0 0,   0 0;   opacity: 0.7; }
+    50%  { background-position: 6px -40px, -4px -28px, 5px -50px; opacity: 1; }
+    100% { background-position: 10px -90px, -8px -70px, 8px -100px; opacity: 0; }
+}
+
+/* ── ELECTRIC STORM THEME (new) ──────────────────────────────────────────── */
+body.theme-electric {
+    --primary:      #4fc3f7;
+    --glow:         #06b6d4;
+    --board-bg:     rgba(4, 4, 15, 0.97);
+    --cell-bg:      rgba(8, 8, 32, 0.93);
+    --border-color: #4fc3f726;
+    background: #02020a !important;
+}
+body.theme-electric, body.theme-electric .screen,
+body.theme-electric #mainMenu, body.theme-electric #gameView {
+    background: #02020a !important;
+}
+body.theme-electric #mainMenu { background: radial-gradient(circle at center, #030316 0%, #000 100%) !important; }
+body.theme-electric .board {
+    background: rgba(4, 4, 15, 0.97) !important;
+    border: 1px solid #4fc3f71e !important;
+    box-shadow: 0 0 44px #06b6d416 !important;
+    animation: elec-board 3s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+}
+/* Hex-grid overlay */
+body.theme-electric .board::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.07;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='32'%3E%3Cpath d='M14 2 L26 8 L26 22 L14 28 L2 22 L2 8 Z' fill='none' stroke='%234fc3f7' stroke-width='0.8'/%3E%3C/svg%3E");
+    background-size: 28px 32px;
+}
+@keyframes elec-board {
+    0%, 100% { box-shadow: 0 0 34px #06b6d416; }
+    50%       { box-shadow: 0 0 56px #4fc3f72a; }
+}
+/* Hard-corner tiles */
+body.theme-electric .cell:not(.blocked) {
+    border-radius: 2px !important;
+    border: 1px solid #4fc3f726;
+    background: rgba(8, 8, 32, 0.93) !important;
+}
+/* Owned: electric arc traveling around border */
+body.theme-electric .cell.owned {
+    border-color: #4fc3f7 !important;
+    background: rgba(10, 10, 36, 0.96) !important;
+    animation: elec-arc 1.8s linear infinite !important;
+}
+@keyframes elec-arc {
+    0%   { box-shadow:  4px 0   0 0 #4fc3f7cc, 0 0 10px #4fc3f738 inset; }
+    25%  { box-shadow:  0  -4px 0 0 #4fc3f7cc, 0 0 10px #4fc3f738 inset; }
+    50%  { box-shadow: -4px 0   0 0 #4fc3f7cc, 0 0 10px #4fc3f738 inset; }
+    75%  { box-shadow:  0   4px 0 0 #4fc3f7cc, 0 0 10px #4fc3f738 inset; }
+    100% { box-shadow:  4px 0   0 0 #4fc3f7cc, 0 0 10px #4fc3f738 inset; }
+}
+/* Near-cap: plasma overload */
+body.theme-electric .cell.pulse {
+    box-shadow: 0 0 18px #4fc3f7 inset, 0 0 8px #4fc3f7 !important;
+    animation: elec-danger 0.38s ease-in-out infinite !important;
+}
+@keyframes elec-danger {
+    0%, 100% { box-shadow: 0 0 12px #4fc3f7 inset; border-color: #4fc3f7; }
+    50%       { box-shadow: 0 0 28px #fff inset, 0 0 14px #4fc3f7; border-color: #fff; }
+}
+body.theme-electric .cell.blocked { background: rgba(2,2,10,0.92) !important; border-color: #080820 !important; }
+
+/* ── FROZEN TUNDRA THEME (new) ───────────────────────────────────────────── */
+body.theme-ice {
+    --primary:      #00b4d8;
+    --glow:         #90e0ef38;
+    --board-bg:     rgba(2, 13, 26, 0.97);
+    --cell-bg:      rgba(10, 26, 46, 0.65);
+    --border-color: #a8d8ea38;
+    background: #010810 !important;
+}
+body.theme-ice, body.theme-ice .screen,
+body.theme-ice #mainMenu, body.theme-ice #gameView {
+    background: #010810 !important;
+}
+body.theme-ice #mainMenu { background: radial-gradient(circle at center, #021020 0%, #000 100%) !important; }
+body.theme-ice .board {
+    background: rgba(2, 13, 26, 0.97) !important;
+    border: 1px solid #a8d8ea22 !important;
+    box-shadow: 0 0 55px #90e0ef16 !important;
+    animation: ice-board 5s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+}
+/* Frost crystal overlay */
+body.theme-ice .board::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cline x1='30' y1='0' x2='30' y2='60' stroke='%23a8d8ea' stroke-width='0.6'/%3E%3Cline x1='0' y1='30' x2='60' y2='30' stroke='%23a8d8ea' stroke-width='0.6'/%3E%3Cline x1='0' y1='0' x2='60' y2='60' stroke='%23a8d8ea' stroke-width='0.35'/%3E%3Cline x1='60' y1='0' x2='0' y2='60' stroke='%23a8d8ea' stroke-width='0.35'/%3E%3C/svg%3E");
+    background-size: 60px 60px;
+}
+@keyframes ice-board {
+    0%, 100% { box-shadow: 0 0 42px #90e0ef12; }
+    50%       { box-shadow: 0 0 66px #90e0ef26; }
+}
+/* Frosted glass tiles */
+body.theme-ice .cell:not(.blocked) {
+    border-radius: 9px !important;
+    border: 1.5px solid #a8d8ea35 !important;
+    background: rgba(13, 33, 55, 0.65) !important;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+}
+/* Owned: crystal blue frost */
+body.theme-ice .cell.owned {
+    border-color: #00b4d8 !important;
+    background: rgba(0, 55, 90, 0.50) !important;
+    box-shadow: 0 0 20px #00b4d81c inset, 0 0 7px #00b4d828 !important;
+    animation: ice-shimmer 4.5s ease-in-out infinite !important;
+}
+@keyframes ice-shimmer {
+    0%, 100% { filter: brightness(1); }
+    35%       { filter: brightness(1.2); }
+    65%       { filter: brightness(0.93); }
+}
+/* Near-cap: white ice fracture */
+body.theme-ice .cell.pulse {
+    box-shadow: 0 0 22px #00b4d8 inset, 0 0 12px #90e0ef !important;
+    animation: ice-danger 0.75s ease-in-out infinite !important;
+}
+@keyframes ice-danger {
+    0%, 100% { box-shadow: 0 0 16px #00b4d8 inset; border-color: #00b4d8; }
+    50%       { box-shadow: 0 0 32px #e8f4ff inset, 0 0 16px #00b4d8; border-color: #e8f4ff; }
+}
+/* Snowflakes: 4 floating dots */
+body.theme-ice::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    pointer-events: none;
+    z-index: 8990;
+    background-image:
+        radial-gradient(circle 1.5px at 22% 0%, rgba(255,255,255,0.85), transparent 100%),
+        radial-gradient(circle 1px   at 50% 0%, rgba(255,255,255,0.70), transparent 100%),
+        radial-gradient(circle 1.5px at 74% 0%, rgba(255,255,255,0.80), transparent 100%),
+        radial-gradient(circle 1px   at 38% 0%, rgba(255,255,255,0.60), transparent 100%);
+    animation: snow-fall 9s linear infinite;
+}
+@keyframes snow-fall {
+    0%   { background-position: 0 -4px,   0 -4px,   0 -4px,   0 -4px;   opacity: 0; }
+    5%   { opacity: 0.75; }
+    92%  { opacity: 0.55; }
+    100% { background-position: 12px 102vh, -9px 102vh, 6px 102vh, -5px 102vh; opacity: 0; }
+}
+body.theme-ice .cell.blocked { background: rgba(1,6,14,0.92) !important; border-color: #081828 !important; }
+
+/* ── DEEP VOID THEME (new) ───────────────────────────────────────────────── */
+body.theme-void {
+    --primary:      #7c3aed;
+    --glow:         #7c3aed20;
+    --board-bg:     rgba(0, 0, 3, 0.99);
+    --cell-bg:      rgba(10, 10, 10, 0.97);
+    --border-color: #ffffff10;
+    background: #000 !important;
+}
+body.theme-void, body.theme-void .screen,
+body.theme-void #mainMenu, body.theme-void #gameView {
+    background: #000 !important;
+}
+body.theme-void #mainMenu { background: radial-gradient(circle at center, #0a0014 0%, #000 100%) !important; }
+/* Static star field */
+body.theme-void::before {
+    content: '';
+    position: fixed;
+    width: 2px; height: 2px;
+    top: 0; left: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: transparent;
+    box-shadow:
+        48px  82px #fff,  120px  35px #fffd, 200px 140px #fff,  320px  60px #fffc,
+        85px 200px #fff,  250px 310px #fff,   410px  20px #fffd, 500px 150px #fff,
+        60px 400px #fff,  370px 420px #fffc,  190px 480px #fff,  440px 340px #fffd,
+        30px 520px #fff,  290px 530px #fff,   560px 490px #fff,  150px 570px #fffc,
+        480px 600px #fff, 100px 620px #fffd,  350px 660px #fff,  600px 280px #fff,
+        220px 700px #fffd,470px 720px #fff,   80px 750px #fff,   340px 780px #fffc,
+        520px 800px #fff, 160px 820px #fffd,  420px 850px #fff,  260px 870px #fff,
+        580px  50px #fff,  40px 280px #fffc,  310px 200px #fffd, 550px 380px #fff,
+        130px 450px #fff, 390px 100px #fffd,  240px 380px #fff;
+    opacity: 0.6;
+}
+body.theme-void .board {
+    background: rgba(0, 0, 3, 0.99) !important;
+    border: 1px solid #ffffff0c !important;
+    box-shadow: 0 0 90px #7c3aed12 !important;
+    animation: void-breathe 6s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+}
+/* Rotating nebula inside board */
+body.theme-void .board::before {
+    content: '';
+    position: absolute;
+    width: 200px; height: 200px;
+    top: 50%; left: 50%;
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 70%);
+    animation: nebula-spin 30s linear infinite;
+    border-radius: 50%;
+}
+@keyframes void-breathe {
+    0%, 100% { box-shadow: 0 0 65px #7c3aed0e; }
+    50%       { box-shadow: 0 0 100px #7c3aed1e; }
+}
+@keyframes nebula-spin {
+    0%   { transform: translate(-50%,-50%) rotate(0deg)   scale(1);   }
+    50%  { transform: translate(-50%,-50%) rotate(180deg) scale(1.35); }
+    100% { transform: translate(-50%,-50%) rotate(360deg) scale(1);   }
+}
+/* Near-black tiles */
+body.theme-void .cell:not(.blocked) {
+    border-radius: 4px !important;
+    border: 1px solid #ffffff10 !important;
+    background: #070707 !important;
+}
+/* Owned: cosmic violet, slow pulse */
+body.theme-void .cell.owned {
+    border-color: #7c3aed70 !important;
+    background: #0d0a16 !important;
+    box-shadow: 0 0 26px #7c3aed16 inset, 0 0 7px #7c3aed1a !important;
+    animation: void-pulse 5s ease-in-out infinite !important;
+}
+@keyframes void-pulse {
+    0%, 100% { box-shadow: 0 0 20px #7c3aed12 inset; }
+    50%       { box-shadow: 0 0 36px #7c3aed2e inset, 0 0 9px #7c3aed1c; }
+}
+/* Near-cap: supernova swell */
+body.theme-void .cell.pulse {
+    box-shadow: 0 0 26px #7c3aed inset, 0 0 14px #7c3aed !important;
+    animation: void-danger 0.85s ease-in-out infinite !important;
+}
+@keyframes void-danger {
+    0%, 100% { box-shadow: 0 0 20px #7c3aed inset; border-color: #7c3aed; }
+    50%       { box-shadow: 0 0 40px #c084fc inset, 0 0 20px #7c3aed; border-color: #c084fc; }
+}
+body.theme-void .cell.blocked { background: #000 !important; border-color: #0a0a0a !important; }
+
+/* ── MINIMAL CLEAN THEME (new) ───────────────────────────────────────────── */
+body.theme-minimal {
+    --primary:      #1e3a5f;
+    --glow:         transparent;
+    --board-bg:     #ece8e1;
+    --cell-bg:      #e4dfd8;
+    --border-color: #cac4bb;
+    background: #f4f1eb !important;
+    color: #2d2d2d !important;
+}
+body.theme-minimal, body.theme-minimal .screen,
+body.theme-minimal #mainMenu, body.theme-minimal #gameView {
+    background: #f4f1eb !important;
+    color: #2d2d2d !important;
+}
+body.theme-minimal #mainMenu { background: #f4f1eb !important; }
+body.theme-minimal h1 { color: #1e3a5f; text-shadow: none !important; }
+body.theme-minimal .menu-section { background: #eae6df !important; border-color: #cac4bb !important; }
+body.theme-minimal #statusText, body.theme-minimal .hud-label { color: #2d2d2d !important; text-shadow: none !important; }
+/* Board: clean paper with only a drop-shadow, no glow ring */
+body.theme-minimal .board {
+    background: #ece8e1 !important;
+    border: 1px solid #cac4bb !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.06) !important;
+    animation: none !important;
+}
+/* Flat tiles — zero glow */
+body.theme-minimal .cell:not(.blocked) {
+    border-radius: 6px !important;
+    border: 1px solid #cac4bb !important;
+    background: #e4dfd8 !important;
+    box-shadow: none !important;
+    animation: none !important;
+}
+/* Owned: ink-washed tint, soft drop shadow only */
+body.theme-minimal .cell.owned {
+    border: 1.5px solid #b2aba1 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.09) !important;
+    animation: none !important;
+}
+/* Near-cap: warm amber outline, no explosive glow */
+body.theme-minimal .cell.pulse {
+    border-color: #9b7213 !important;
+    box-shadow: 0 0 0 2px rgba(155,114,19,0.22) !important;
+    animation: minimal-warn 1.6s ease-in-out infinite !important;
+}
+@keyframes minimal-warn {
+    0%, 100% { border-color: #9b7213; }
+    50%       { border-color: #c9930d; }
+}
+/* Remove orb glow rings — ink blobs only */
+body.theme-minimal .orb::after { box-shadow: none !important; }
+/* Last-move: amber outline, no pulse */
+body.theme-minimal .cell.last-move {
+    border-color: #c9930d !important;
+    box-shadow: 0 0 0 2px rgba(201,147,13,0.28) !important;
+    animation: none !important;
+    transform: none !important;
+}
+/* Suppress all decorative text glows */
+body.theme-minimal h1,
+body.theme-minimal .combo-flash { text-shadow: none !important; }
+body.theme-minimal .cell.blocked { background: #d6d2ca !important; border-color: #bfb9b0 !important; }
+
 /* ── MOBILE BOARD POLISH ─────────────────────────────────────────────────── */
 /* Push board to top (remove centering gap) and tighten HUD spacing on mobile */
 @media (max-width: 600px) {
