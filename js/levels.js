@@ -41,6 +41,210 @@ const BROKEN_PLUS_7 = [
 
 export const SAGA_LEVELS = [
 
+    // ══════════════════════════════════════════════════════════════════════
+    // TEST LEVELS — click the TOP-LEFT cell (your orb) to trigger the blast
+    // Each level tests a specific milestone tier
+    // ══════════════════════════════════════════════════════════════════════
+
+    // ── TEST 1 — CHAIN REACTOR (10+ orbs) — 5×5 ─────────────────────────
+    // Click (0,0) → 10 total explosions → "CHAIN REACTOR" (cyan)
+    {
+        id: 901,
+        name: "Test 1: Chain Reactor",
+        description: "Click top-left corner. Triggers CHAIN REACTOR (10+ orbs).",
+        rows: 5, cols: 5,
+        blockedCells: [],
+        presetOrbs: [
+            // Player — top-left corner, 1 away from cap
+            { x: 0, y: 0, player: 0, count: 1 },   // corner cap=2, needs 1 more
+            // AI cluster (9 cells, all at cap-1)
+            { x: 1, y: 0, player: 1, count: 2 },   // y=0 edge, cap=3
+            { x: 2, y: 0, player: 1, count: 2 },   // y=0 edge, cap=3
+            { x: 0, y: 1, player: 1, count: 2 },   // x=0 edge, cap=3
+            { x: 1, y: 1, player: 1, count: 3 },   // interior, cap=4
+            { x: 2, y: 1, player: 1, count: 3 },   // interior, cap=4
+            { x: 3, y: 1, player: 1, count: 3 },   // interior, cap=4
+            { x: 0, y: 2, player: 1, count: 2 },   // x=0 edge, cap=3
+            { x: 1, y: 2, player: 1, count: 3 },   // interior, cap=4
+            { x: 2, y: 2, player: 1, count: 3 },   // interior, cap=4
+        ]
+    },
+
+    // ── TEST 2 — OVERLOAD (15+ orbs) — 6×6 ──────────────────────────────
+    // Click (0,0) → 16 total explosions → "OVERLOAD" (orange)
+    {
+        id: 902,
+        name: "Test 2: Overload",
+        description: "Click top-left corner. Triggers OVERLOAD (15+ orbs).",
+        rows: 6, cols: 6,
+        blockedCells: [],
+        presetOrbs: [
+            // Player
+            { x: 0, y: 0, player: 0, count: 1 },   // corner cap=2
+            // AI (15 cells at cap-1)
+            { x: 1, y: 0, player: 1, count: 2 },
+            { x: 2, y: 0, player: 1, count: 2 },
+            { x: 3, y: 0, player: 1, count: 2 },
+            { x: 0, y: 1, player: 1, count: 2 },
+            { x: 1, y: 1, player: 1, count: 3 },
+            { x: 2, y: 1, player: 1, count: 3 },
+            { x: 3, y: 1, player: 1, count: 3 },
+            { x: 0, y: 2, player: 1, count: 2 },
+            { x: 1, y: 2, player: 1, count: 3 },
+            { x: 2, y: 2, player: 1, count: 3 },
+            { x: 3, y: 2, player: 1, count: 3 },
+            { x: 0, y: 3, player: 1, count: 2 },
+            { x: 1, y: 3, player: 1, count: 3 },
+            { x: 2, y: 3, player: 1, count: 3 },
+            { x: 3, y: 3, player: 1, count: 3 },
+        ]
+    },
+
+    // ── TEST 3 — QUANTUM BURST (20+ orbs) — 7×7 ─────────────────────────
+    // Click (0,0) → 20 total explosions → "QUANTUM BURST" (purple)
+    {
+        id: 903,
+        name: "Test 3: Quantum Burst",
+        description: "Click top-left corner. Triggers QUANTUM BURST (20+ orbs).",
+        rows: 7, cols: 7,
+        blockedCells: [],
+        presetOrbs: [
+            // Player
+            { x: 0, y: 0, player: 0, count: 1 },
+            // AI (19 cells at cap-1 — 5-wide × 4-tall block)
+            { x: 1, y: 0, player: 1, count: 2 },
+            { x: 2, y: 0, player: 1, count: 2 },
+            { x: 3, y: 0, player: 1, count: 2 },
+            { x: 4, y: 0, player: 1, count: 2 },
+            { x: 0, y: 1, player: 1, count: 2 },
+            { x: 1, y: 1, player: 1, count: 3 },
+            { x: 2, y: 1, player: 1, count: 3 },
+            { x: 3, y: 1, player: 1, count: 3 },
+            { x: 4, y: 1, player: 1, count: 3 },
+            { x: 0, y: 2, player: 1, count: 2 },
+            { x: 1, y: 2, player: 1, count: 3 },
+            { x: 2, y: 2, player: 1, count: 3 },
+            { x: 3, y: 2, player: 1, count: 3 },
+            { x: 4, y: 2, player: 1, count: 3 },
+            { x: 0, y: 3, player: 1, count: 2 },
+            { x: 1, y: 3, player: 1, count: 3 },
+            { x: 2, y: 3, player: 1, count: 3 },
+            { x: 3, y: 3, player: 1, count: 3 },
+            { x: 4, y: 3, player: 1, count: 3 },
+        ]
+    },
+
+    // ── TEST 4 — MEGA CORE BLAST (30+ orbs) — 8×8 ───────────────────────
+    // Click (0,0) → 36 total explosions → "MEGA CORE BLAST" (gold)
+    // Also triggers MEGA BLAST VFX (≥13) + COMBO FLASH
+    {
+        id: 904,
+        name: "Test 4: Mega Core Blast",
+        description: "Click top-left corner. Triggers MEGA CORE BLAST (30+ orbs) + nuke VFX.",
+        rows: 8, cols: 8,
+        blockedCells: [],
+        presetOrbs: [
+            // Player
+            { x: 0, y: 0, player: 0, count: 1 },
+            // AI (35 cells at cap-1 — 6-wide × 6-tall block)
+            { x: 1, y: 0, player: 1, count: 2 },
+            { x: 2, y: 0, player: 1, count: 2 },
+            { x: 3, y: 0, player: 1, count: 2 },
+            { x: 4, y: 0, player: 1, count: 2 },
+            { x: 5, y: 0, player: 1, count: 2 },
+            { x: 0, y: 1, player: 1, count: 2 },
+            { x: 1, y: 1, player: 1, count: 3 },
+            { x: 2, y: 1, player: 1, count: 3 },
+            { x: 3, y: 1, player: 1, count: 3 },
+            { x: 4, y: 1, player: 1, count: 3 },
+            { x: 5, y: 1, player: 1, count: 3 },
+            { x: 0, y: 2, player: 1, count: 2 },
+            { x: 1, y: 2, player: 1, count: 3 },
+            { x: 2, y: 2, player: 1, count: 3 },
+            { x: 3, y: 2, player: 1, count: 3 },
+            { x: 4, y: 2, player: 1, count: 3 },
+            { x: 5, y: 2, player: 1, count: 3 },
+            { x: 0, y: 3, player: 1, count: 2 },
+            { x: 1, y: 3, player: 1, count: 3 },
+            { x: 2, y: 3, player: 1, count: 3 },
+            { x: 3, y: 3, player: 1, count: 3 },
+            { x: 4, y: 3, player: 1, count: 3 },
+            { x: 5, y: 3, player: 1, count: 3 },
+            { x: 0, y: 4, player: 1, count: 2 },
+            { x: 1, y: 4, player: 1, count: 3 },
+            { x: 2, y: 4, player: 1, count: 3 },
+            { x: 3, y: 4, player: 1, count: 3 },
+            { x: 4, y: 4, player: 1, count: 3 },
+            { x: 5, y: 4, player: 1, count: 3 },
+            { x: 0, y: 5, player: 1, count: 2 },
+            { x: 1, y: 5, player: 1, count: 3 },
+            { x: 2, y: 5, player: 1, count: 3 },
+            { x: 3, y: 5, player: 1, count: 3 },
+            { x: 4, y: 5, player: 1, count: 3 },
+            { x: 5, y: 5, player: 1, count: 3 },
+        ]
+    },
+
+    // ── TEST 5 — DOMINATION BLAST (40+ orbs) — 9×9 FULL BOARD ───────────
+    // Click (0,0) → ALL 81 cells explode → "DOMINATION BLAST" (rainbow)
+    // The ultimate test: every single cell on the board is at cap-1
+    {
+        id: 905,
+        name: "Test 5: Domination Blast",
+        description: "Click top-left corner. ENTIRE BOARD explodes → DOMINATION BLAST!",
+        rows: 9, cols: 9,
+        blockedCells: [],
+        presetOrbs: [
+            // Player — top-left corner
+            { x: 0, y: 0, player: 0, count: 1 },
+            // AI — every other cell on the 9×9 board, all at cap-1
+            // Corners (cap=2 → count=1)
+            { x: 8, y: 0, player: 1, count: 1 },
+            { x: 0, y: 8, player: 1, count: 1 },
+            { x: 8, y: 8, player: 1, count: 1 },
+            // Top edge y=0 (cap=3 → count=2)
+            { x: 1, y: 0, player: 1, count: 2 },
+            { x: 2, y: 0, player: 1, count: 2 },
+            { x: 3, y: 0, player: 1, count: 2 },
+            { x: 4, y: 0, player: 1, count: 2 },
+            { x: 5, y: 0, player: 1, count: 2 },
+            { x: 6, y: 0, player: 1, count: 2 },
+            { x: 7, y: 0, player: 1, count: 2 },
+            // Bottom edge y=8 (cap=3 → count=2)
+            { x: 1, y: 8, player: 1, count: 2 },
+            { x: 2, y: 8, player: 1, count: 2 },
+            { x: 3, y: 8, player: 1, count: 2 },
+            { x: 4, y: 8, player: 1, count: 2 },
+            { x: 5, y: 8, player: 1, count: 2 },
+            { x: 6, y: 8, player: 1, count: 2 },
+            { x: 7, y: 8, player: 1, count: 2 },
+            // Left edge x=0 (cap=3 → count=2)
+            { x: 0, y: 1, player: 1, count: 2 },
+            { x: 0, y: 2, player: 1, count: 2 },
+            { x: 0, y: 3, player: 1, count: 2 },
+            { x: 0, y: 4, player: 1, count: 2 },
+            { x: 0, y: 5, player: 1, count: 2 },
+            { x: 0, y: 6, player: 1, count: 2 },
+            { x: 0, y: 7, player: 1, count: 2 },
+            // Right edge x=8 (cap=3 → count=2)
+            { x: 8, y: 1, player: 1, count: 2 },
+            { x: 8, y: 2, player: 1, count: 2 },
+            { x: 8, y: 3, player: 1, count: 2 },
+            { x: 8, y: 4, player: 1, count: 2 },
+            { x: 8, y: 5, player: 1, count: 2 },
+            { x: 8, y: 6, player: 1, count: 2 },
+            { x: 8, y: 7, player: 1, count: 2 },
+            // Interior 7×7 (cap=4 → count=3)
+            { x: 1, y: 1, player: 1, count: 3 }, { x: 2, y: 1, player: 1, count: 3 }, { x: 3, y: 1, player: 1, count: 3 }, { x: 4, y: 1, player: 1, count: 3 }, { x: 5, y: 1, player: 1, count: 3 }, { x: 6, y: 1, player: 1, count: 3 }, { x: 7, y: 1, player: 1, count: 3 },
+            { x: 1, y: 2, player: 1, count: 3 }, { x: 2, y: 2, player: 1, count: 3 }, { x: 3, y: 2, player: 1, count: 3 }, { x: 4, y: 2, player: 1, count: 3 }, { x: 5, y: 2, player: 1, count: 3 }, { x: 6, y: 2, player: 1, count: 3 }, { x: 7, y: 2, player: 1, count: 3 },
+            { x: 1, y: 3, player: 1, count: 3 }, { x: 2, y: 3, player: 1, count: 3 }, { x: 3, y: 3, player: 1, count: 3 }, { x: 4, y: 3, player: 1, count: 3 }, { x: 5, y: 3, player: 1, count: 3 }, { x: 6, y: 3, player: 1, count: 3 }, { x: 7, y: 3, player: 1, count: 3 },
+            { x: 1, y: 4, player: 1, count: 3 }, { x: 2, y: 4, player: 1, count: 3 }, { x: 3, y: 4, player: 1, count: 3 }, { x: 4, y: 4, player: 1, count: 3 }, { x: 5, y: 4, player: 1, count: 3 }, { x: 6, y: 4, player: 1, count: 3 }, { x: 7, y: 4, player: 1, count: 3 },
+            { x: 1, y: 5, player: 1, count: 3 }, { x: 2, y: 5, player: 1, count: 3 }, { x: 3, y: 5, player: 1, count: 3 }, { x: 4, y: 5, player: 1, count: 3 }, { x: 5, y: 5, player: 1, count: 3 }, { x: 6, y: 5, player: 1, count: 3 }, { x: 7, y: 5, player: 1, count: 3 },
+            { x: 1, y: 6, player: 1, count: 3 }, { x: 2, y: 6, player: 1, count: 3 }, { x: 3, y: 6, player: 1, count: 3 }, { x: 4, y: 6, player: 1, count: 3 }, { x: 5, y: 6, player: 1, count: 3 }, { x: 6, y: 6, player: 1, count: 3 }, { x: 7, y: 6, player: 1, count: 3 },
+            { x: 1, y: 7, player: 1, count: 3 }, { x: 2, y: 7, player: 1, count: 3 }, { x: 3, y: 7, player: 1, count: 3 }, { x: 4, y: 7, player: 1, count: 3 }, { x: 5, y: 7, player: 1, count: 3 }, { x: 6, y: 7, player: 1, count: 3 }, { x: 7, y: 7, player: 1, count: 3 },
+        ]
+    },
+
     // ── LEVEL 1 ──────────────────────────────────────────────────────────
     // THE OPEN FIELD — 7×7, zero blocked cells
     //
