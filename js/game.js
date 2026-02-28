@@ -388,6 +388,26 @@ function showComboFlash(count) {
   }
 }
 
+// ── BLAST MILESTONE ANNOUNCER ─────────────────────────────────────────────────
+function showBlastMilestone(n) {
+  const tiers = [
+    { min: 40, tier: 6, label: "DOMINATION BLAST" },
+    { min: 30, tier: 5, label: "MEGA CORE BLAST" },
+    { min: 25, tier: 4, label: "NOVA BLAST" },
+    { min: 20, tier: 3, label: "QUANTUM BURST" },
+    { min: 15, tier: 2, label: "OVERLOAD" },
+    { min: 10, tier: 1, label: "CHAIN REACTOR" },
+  ];
+  const match = tiers.find(t => n >= t.min);
+  if (!match) return;
+  const el = document.getElementById("blastMilestone");
+  if (!el) return;
+  el.classList.remove("active", "tier-1", "tier-2", "tier-3", "tier-4", "tier-5", "tier-6");
+  void el.offsetWidth; // force reflow to restart animation
+  el.textContent = match.label;
+  el.classList.add("active", `tier-${match.tier}`);
+}
+
 // ── XP & RANK ────────────────────────────────────────────────────────────────
 function grantXP(amount) {
   const result = addXP(amount);
@@ -933,6 +953,7 @@ async function resolveReactions() {
     const br = boardEl.getBoundingClientRect();
     spawnMegaBlast(br.left + br.width / 2, br.top + br.height / 2, players[current].color);
   }
+  showBlastMilestone(totalBlast);
 }
 
 function updateScores() {

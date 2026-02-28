@@ -580,6 +580,47 @@ body.theme-magma .cell.blocked { background: rgba(5,1,0,0.85) !important; border
     100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
 }
 
+/* ── BLAST MILESTONE ANNOUNCER ───────────────────────────────────────────── */
+.blast-milestone {
+    position: fixed;
+    top: 34%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    font-size: 2.8rem;
+    font-weight: 900;
+    letter-spacing: 4px;
+    white-space: nowrap;
+    z-index: 601;
+    pointer-events: none;
+    opacity: 0;
+    text-transform: uppercase;
+}
+.blast-milestone.active {
+    animation: blastMilestoneAnim 2.2s ease-out forwards;
+}
+@keyframes blastMilestoneAnim {
+    0%   { transform: translate(-50%,-50%) scale(0.2); opacity: 0; }
+    12%  { transform: translate(-50%,-50%) scale(1.5); opacity: 1; }
+    30%  { transform: translate(-50%,-50%) scale(1.05); opacity: 1; }
+    70%  { transform: translate(-50%,-50%) scale(1.0); opacity: 1; }
+    100% { transform: translate(-50%,-50%) scale(1.0); opacity: 0; }
+}
+.blast-milestone.tier-1 { color: #00ffcc; text-shadow: 0 0 20px #00ffcc, 0 0 50px #00ffcc88; font-size: 2.4rem; }
+.blast-milestone.tier-2 { color: #ff8800; text-shadow: 0 0 20px #ff8800, 0 0 50px #ff440088; font-size: 2.6rem; }
+.blast-milestone.tier-3 { color: #cc44ff; text-shadow: 0 0 24px #cc44ff, 0 0 60px #8800ff88; font-size: 2.8rem; }
+.blast-milestone.tier-4 { color: #ff2266; text-shadow: 0 0 28px #ff2266, 0 0 70px #ff006688; font-size: 3.0rem; }
+.blast-milestone.tier-5 { color: #ffd700; text-shadow: 0 0 30px #ffd700, 0 0 80px #ff880088; font-size: 3.2rem; }
+.blast-milestone.tier-6 {
+    color: #ffffff;
+    text-shadow: 0 0 30px #ffffff, 0 0 60px #00ffcc, 0 0 90px #ff2266;
+    font-size: 3.6rem;
+    animation: blastMilestoneAnim 2.2s ease-out forwards, rainbowShift 0.6s linear infinite;
+}
+@keyframes rainbowShift {
+    0%   { filter: hue-rotate(0deg) brightness(1.4); }
+    100% { filter: hue-rotate(360deg) brightness(1.4); }
+}
+
 /* ── SAGA SKIP BUTTON (compact, doesn't block board) ─────────────────────── */
 #sagaSkipBtn {
     align-self: center !important;
