@@ -185,63 +185,35 @@ export const SAGA_LEVELS = [
         ]
     },
 
-    // ── TEST 5 — DOMINATION BLAST (40+ orbs) — 9×9 FULL BOARD ───────────
-    // Click (0,0) → ALL 81 cells explode → "DOMINATION BLAST" (rainbow)
-    // The ultimate test: every single cell on the board is at cap-1
+    // ── TEST 5 — DOMINATION BLAST (40+ orbs) — 9×9, 7×7 block ──────────
+    // Click (0,0) → 50 clean explosions → "DOMINATION BLAST" (rainbow)
+    // 7×7 block of AI at cap-1. Outer ring of 9×9 is EMPTY (no re-explosion loop).
+    // Each cell explodes exactly once → totalBlast ≈ 50 → clean, fast, spectacular.
     {
         id: 905,
         name: "Test 5: Domination Blast",
-        description: "Click top-left corner. ENTIRE BOARD explodes → DOMINATION BLAST!",
+        description: "Click top-left corner. 50-orb cascade → DOMINATION BLAST (rainbow)!",
         rows: 9, cols: 9,
         blockedCells: [],
         presetOrbs: [
-            // Player — top-left corner
+            // Player — top-left corner (cap=2, count=1)
             { x: 0, y: 0, player: 0, count: 1 },
-            // AI — every other cell on the 9×9 board, all at cap-1
-            // Corners (cap=2 → count=1)
-            { x: 8, y: 0, player: 1, count: 1 },
-            { x: 0, y: 8, player: 1, count: 1 },
-            { x: 8, y: 8, player: 1, count: 1 },
-            // Top edge y=0 (cap=3 → count=2)
-            { x: 1, y: 0, player: 1, count: 2 },
-            { x: 2, y: 0, player: 1, count: 2 },
-            { x: 3, y: 0, player: 1, count: 2 },
-            { x: 4, y: 0, player: 1, count: 2 },
-            { x: 5, y: 0, player: 1, count: 2 },
-            { x: 6, y: 0, player: 1, count: 2 },
-            { x: 7, y: 0, player: 1, count: 2 },
-            // Bottom edge y=8 (cap=3 → count=2)
-            { x: 1, y: 8, player: 1, count: 2 },
-            { x: 2, y: 8, player: 1, count: 2 },
-            { x: 3, y: 8, player: 1, count: 2 },
-            { x: 4, y: 8, player: 1, count: 2 },
-            { x: 5, y: 8, player: 1, count: 2 },
-            { x: 6, y: 8, player: 1, count: 2 },
-            { x: 7, y: 8, player: 1, count: 2 },
-            // Left edge x=0 (cap=3 → count=2)
-            { x: 0, y: 1, player: 1, count: 2 },
-            { x: 0, y: 2, player: 1, count: 2 },
-            { x: 0, y: 3, player: 1, count: 2 },
-            { x: 0, y: 4, player: 1, count: 2 },
-            { x: 0, y: 5, player: 1, count: 2 },
-            { x: 0, y: 6, player: 1, count: 2 },
-            { x: 0, y: 7, player: 1, count: 2 },
-            // Right edge x=8 (cap=3 → count=2)
-            { x: 8, y: 1, player: 1, count: 2 },
-            { x: 8, y: 2, player: 1, count: 2 },
-            { x: 8, y: 3, player: 1, count: 2 },
-            { x: 8, y: 4, player: 1, count: 2 },
-            { x: 8, y: 5, player: 1, count: 2 },
-            { x: 8, y: 6, player: 1, count: 2 },
-            { x: 8, y: 7, player: 1, count: 2 },
-            // Interior 7×7 (cap=4 → count=3)
-            { x: 1, y: 1, player: 1, count: 3 }, { x: 2, y: 1, player: 1, count: 3 }, { x: 3, y: 1, player: 1, count: 3 }, { x: 4, y: 1, player: 1, count: 3 }, { x: 5, y: 1, player: 1, count: 3 }, { x: 6, y: 1, player: 1, count: 3 }, { x: 7, y: 1, player: 1, count: 3 },
-            { x: 1, y: 2, player: 1, count: 3 }, { x: 2, y: 2, player: 1, count: 3 }, { x: 3, y: 2, player: 1, count: 3 }, { x: 4, y: 2, player: 1, count: 3 }, { x: 5, y: 2, player: 1, count: 3 }, { x: 6, y: 2, player: 1, count: 3 }, { x: 7, y: 2, player: 1, count: 3 },
-            { x: 1, y: 3, player: 1, count: 3 }, { x: 2, y: 3, player: 1, count: 3 }, { x: 3, y: 3, player: 1, count: 3 }, { x: 4, y: 3, player: 1, count: 3 }, { x: 5, y: 3, player: 1, count: 3 }, { x: 6, y: 3, player: 1, count: 3 }, { x: 7, y: 3, player: 1, count: 3 },
-            { x: 1, y: 4, player: 1, count: 3 }, { x: 2, y: 4, player: 1, count: 3 }, { x: 3, y: 4, player: 1, count: 3 }, { x: 4, y: 4, player: 1, count: 3 }, { x: 5, y: 4, player: 1, count: 3 }, { x: 6, y: 4, player: 1, count: 3 }, { x: 7, y: 4, player: 1, count: 3 },
-            { x: 1, y: 5, player: 1, count: 3 }, { x: 2, y: 5, player: 1, count: 3 }, { x: 3, y: 5, player: 1, count: 3 }, { x: 4, y: 5, player: 1, count: 3 }, { x: 5, y: 5, player: 1, count: 3 }, { x: 6, y: 5, player: 1, count: 3 }, { x: 7, y: 5, player: 1, count: 3 },
-            { x: 1, y: 6, player: 1, count: 3 }, { x: 2, y: 6, player: 1, count: 3 }, { x: 3, y: 6, player: 1, count: 3 }, { x: 4, y: 6, player: 1, count: 3 }, { x: 5, y: 6, player: 1, count: 3 }, { x: 6, y: 6, player: 1, count: 3 }, { x: 7, y: 6, player: 1, count: 3 },
-            { x: 1, y: 7, player: 1, count: 3 }, { x: 2, y: 7, player: 1, count: 3 }, { x: 3, y: 7, player: 1, count: 3 }, { x: 4, y: 7, player: 1, count: 3 }, { x: 5, y: 7, player: 1, count: 3 }, { x: 6, y: 7, player: 1, count: 3 }, { x: 7, y: 7, player: 1, count: 3 },
+            // AI — 7×7 block (x=0-6, y=0-6), all at cap-1
+            // y=0 edge of 9×9 (cap=3 → count=2): x=1..6
+            { x: 1, y: 0, player: 1, count: 2 }, { x: 2, y: 0, player: 1, count: 2 },
+            { x: 3, y: 0, player: 1, count: 2 }, { x: 4, y: 0, player: 1, count: 2 },
+            { x: 5, y: 0, player: 1, count: 2 }, { x: 6, y: 0, player: 1, count: 2 },
+            // x=0 edge of 9×9 (cap=3 → count=2): y=1..6
+            { x: 0, y: 1, player: 1, count: 2 }, { x: 0, y: 2, player: 1, count: 2 },
+            { x: 0, y: 3, player: 1, count: 2 }, { x: 0, y: 4, player: 1, count: 2 },
+            { x: 0, y: 5, player: 1, count: 2 }, { x: 0, y: 6, player: 1, count: 2 },
+            // Interior of 9×9 within 7×7 block (cap=4 → count=3): x=1..6, y=1..6
+            { x: 1, y: 1, player: 1, count: 3 }, { x: 2, y: 1, player: 1, count: 3 }, { x: 3, y: 1, player: 1, count: 3 }, { x: 4, y: 1, player: 1, count: 3 }, { x: 5, y: 1, player: 1, count: 3 }, { x: 6, y: 1, player: 1, count: 3 },
+            { x: 1, y: 2, player: 1, count: 3 }, { x: 2, y: 2, player: 1, count: 3 }, { x: 3, y: 2, player: 1, count: 3 }, { x: 4, y: 2, player: 1, count: 3 }, { x: 5, y: 2, player: 1, count: 3 }, { x: 6, y: 2, player: 1, count: 3 },
+            { x: 1, y: 3, player: 1, count: 3 }, { x: 2, y: 3, player: 1, count: 3 }, { x: 3, y: 3, player: 1, count: 3 }, { x: 4, y: 3, player: 1, count: 3 }, { x: 5, y: 3, player: 1, count: 3 }, { x: 6, y: 3, player: 1, count: 3 },
+            { x: 1, y: 4, player: 1, count: 3 }, { x: 2, y: 4, player: 1, count: 3 }, { x: 3, y: 4, player: 1, count: 3 }, { x: 4, y: 4, player: 1, count: 3 }, { x: 5, y: 4, player: 1, count: 3 }, { x: 6, y: 4, player: 1, count: 3 },
+            { x: 1, y: 5, player: 1, count: 3 }, { x: 2, y: 5, player: 1, count: 3 }, { x: 3, y: 5, player: 1, count: 3 }, { x: 4, y: 5, player: 1, count: 3 }, { x: 5, y: 5, player: 1, count: 3 }, { x: 6, y: 5, player: 1, count: 3 },
+            { x: 1, y: 6, player: 1, count: 3 }, { x: 2, y: 6, player: 1, count: 3 }, { x: 3, y: 6, player: 1, count: 3 }, { x: 4, y: 6, player: 1, count: 3 }, { x: 5, y: 6, player: 1, count: 3 }, { x: 6, y: 6, player: 1, count: 3 },
         ]
     },
 

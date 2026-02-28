@@ -891,8 +891,8 @@ async function resolveReactions() {
   let waveCount = 0;
   let totalBlast = 0;
 
-  // Increased loop limit slightly, but increased speed dramatically
-  while (q.length && loops++ < 1000) {
+  // Cap at 400 iterations — 400 × 8ms worst case = 3.2s max
+  while (q.length && loops++ < 400) {
     waveCount++;
     updateScores();
 
@@ -919,14 +919,17 @@ async function resolveReactions() {
         const cellEl = boardEl.children[idx];
         const r = cellEl.getBoundingClientRect();
 
-        spawnBlast(r.left + r.width / 2, r.top + r.height / 2, players[current].color);
+        // Throttle VFX for huge waves — MEGA BLAST already covers the visual impact
+        if (wave.length <= 10 || waveCount % 3 === 0) {
+          spawnBlast(r.left + r.width / 2, r.top + r.height / 2, players[current].color);
+        }
 
         // Subtle pop effect (not the giant scale from before)
         cellEl.style.transform = "scale(1.1)";
         setTimeout(() => { cellEl.style.transform = ""; }, 100);
 
       } catch (e) {
-        spawnBlast(x, y, players[current].color);
+        if (wave.length <= 10 || waveCount % 3 === 0) spawnBlast(x, y, players[current].color);
       }
 
       cell.count -= cap;
@@ -944,8 +947,9 @@ async function resolveReactions() {
 
     findExplosions();
 
-    // ⭐ THE FIX: 50ms delay (Fast & Snappy)
-    await sleep(50);
+    // Adaptive delay: small chains get smooth 50ms, huge chains resolve fast
+    const waveDelay = loops < 25 ? 50 : loops < 60 ? 20 : 8;
+    await sleep(waveDelay);
   }
 
   if (waveCount >= 3) showComboFlash(waveCount);
