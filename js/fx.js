@@ -227,6 +227,87 @@ export function spawnVoidCollapse(x, y, color) {
     }, 80);
 }
 
+// ── BLAST SKIN: PULSE ─────────────────────────────────────────────────────────
+// Heartbeat double-pulse: glowing orb particles fan out in a ring formation — two
+// waves separated by ~230ms. Visually distinct from Shockwave (no line rings).
+export function spawnPulse(x, y, color) {
+    function spawnWave(lifeStart) {
+        const count = isMobile ? 12 : 20;
+        for (let i = 0; i < count; i++) {
+            const angle = (i / count) * Math.PI * 2;
+            const vel = 1.6 + Math.random() * 1.4;
+            particles.push({
+                x: x + Math.cos(angle) * 5,
+                y: y + Math.sin(angle) * 5,
+                vx: Math.cos(angle) * vel,
+                vy: Math.sin(angle) * vel,
+                size: (isMobile ? 4 : 6) + Math.random() * 3,
+                color: i % 4 === 0 ? '#ffffff' : color,
+                life: lifeStart,
+                decay: 0.016 + Math.random() * 0.008
+            });
+        }
+    }
+
+    // Wave 1 — first beat
+    spawnWave(1.0);
+    flashOverlay.style.backgroundColor = color;
+    flashOverlay.style.opacity = '0.30';
+    setTimeout(() => { flashOverlay.style.opacity = '0'; }, 100);
+
+    // Wave 2 — second beat (heartbeat pause)
+    setTimeout(() => {
+        spawnWave(0.8);
+        flashOverlay.style.backgroundColor = color;
+        flashOverlay.style.opacity = '0.20';
+        setTimeout(() => { flashOverlay.style.opacity = '0'; }, 80);
+    }, 230);
+}
+
+// ── BLAST SKIN: RIPPLE ────────────────────────────────────────────────────────
+// Soft water-ripple effect: 5 thin translucent rings expanding slowly at varying speeds.
+export function spawnRipple(x, y, color) {
+    const config = [
+        { delay: 0,   color: color,     width: 1.5, speed: 2.0, decay: 0.018, life: 0.70 },
+        { delay: 80,  color: '#aaffee', width: 1.0, speed: 2.6, decay: 0.016, life: 0.55 },
+        { delay: 160, color: color,     width: 1.2, speed: 3.2, decay: 0.015, life: 0.45 },
+        { delay: 240, color: '#ffffff', width: 0.8, speed: 3.8, decay: 0.014, life: 0.35 },
+        { delay: 320, color: color,     width: 0.7, speed: 4.4, decay: 0.013, life: 0.25 },
+    ];
+    config.forEach(c => {
+        setTimeout(() => {
+            rings.push({ x, y, r: 2, speed: c.speed, width: c.width, color: c.color, life: c.life, decay: c.decay });
+        }, c.delay);
+    });
+    // No flash — purely gentle ripple with no impact
+}
+
+// ── BLAST SKIN: VOID IMPLOSION ────────────────────────────────────────────────
+// Pure inward collapse — particles converge to vanish at center, no outward burst.
+export function spawnVoidImplosion(x, y, color) {
+    const pullCount = isMobile ? 10 : 20;
+    const spread = 60;
+    for (let i = 0; i < pullCount; i++) {
+        const angle = (i / pullCount) * Math.PI * 2;
+        const dist = spread * (0.5 + Math.random() * 0.5);
+        const vel = 2.8 + Math.random() * 2;
+        particles.push({
+            x: x + Math.cos(angle) * dist,
+            y: y + Math.sin(angle) * dist,
+            vx: -Math.cos(angle) * vel,
+            vy: -Math.sin(angle) * vel,
+            size: 3 + Math.random() * 3,
+            color: i % 3 === 0 ? '#ffffff' : (i % 3 === 1 ? color : '#330050'),
+            life: 0.85,
+            decay: 0.055
+        });
+    }
+    // Faint dark flash to sell the collapse
+    flashOverlay.style.backgroundColor = '#000000';
+    flashOverlay.style.opacity = '0.30';
+    setTimeout(() => { flashOverlay.style.opacity = '0'; }, 150);
+}
+
 // ── MEGA BLAST — auto-fires on 13+ orb chain reactions ───────────────────────
 // Five escalating rings + double shake + massive particle burst from board center.
 export function spawnMegaBlast(x, y, color) {

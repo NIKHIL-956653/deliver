@@ -24,7 +24,8 @@ function getRankIndex(xp) {
 const defaultData = {
     settings: {
         theme: 'default',
-        xp: 0
+        xp: 0,
+        coins: 0
     },
     stats: {
         matches: 0,
@@ -105,6 +106,45 @@ export function addXP(amount) {
         prevRankName: RANKS[prevRankIdx].name,
         leveledUp: newRankIdx > prevRankIdx
     };
+}
+// ── COIN FUNCTIONS ────────────────────────────────────────────────────────────
+export function getCoins() {
+    const data = loadData();
+    return data.settings.coins || 0;
+}
+
+export function addCoins(amount) {
+    const data = loadData();
+    data.settings.coins = (data.settings.coins || 0) + amount;
+    saveData(data);
+    return data.settings.coins;
+}
+
+export function spendCoins(amount) {
+    const data = loadData();
+    const current = data.settings.coins || 0;
+    if (current < amount) return false;
+    data.settings.coins = current - amount;
+    saveData(data);
+    return true;
+}
+
+export function canClaimDailyCoins() {
+    const last = localStorage.getItem('neon_coin_claim');
+    if (!last) return true;
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    return last !== today;
+}
+
+export function claimDailyCoins() {
+    if (!canClaimDailyCoins()) return 0;
+    const CLAIM_AMOUNT = 25;
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    localStorage.setItem('neon_coin_claim', today);
+    addCoins(CLAIM_AMOUNT);
+    return CLAIM_AMOUNT;
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -192,24 +232,39 @@ export function getAllLevelStars() {
 }
 
 // ── UI: Show Toast Notification ──────────────────────────────────────────────
-function showAchievementToast(title, desc) {
-    const container = document.getElementById('achievement-container');
-    if (!container) return;
+const _toastQueue = [];
+let _toastBusy = false;
+
+function _processToastQueue() {
+    if (_toastQueue.length === 0) { _toastBusy = false; return; }
+    _toastBusy = true;
+    const { title, desc } = _toastQueue.shift();
 
     const toast = document.createElement('div');
     toast.className = 'achievement-toast';
     toast.innerHTML = `
-        <div class="icon">🏆</div>
-        <div class="text">
-            <div class="title">${title}</div>
-            <div class="desc">${desc}</div>
+        <div class="ach-toast-label">ACHIEVEMENT UNLOCKED</div>
+        <div class="ach-toast-body">
+            <div class="ach-toast-icon">🏆</div>
+            <div class="ach-toast-text">
+                <div class="ach-toast-title">${title}</div>
+                <div class="ach-toast-desc">${desc}</div>
+            </div>
         </div>
     `;
-    
-    container.appendChild(toast);
-    
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
+
     setTimeout(() => {
         toast.classList.add('hide');
-        setTimeout(() => toast.remove(), 500);
-    }, 4000);
+        setTimeout(() => {
+            toast.remove();
+            _processToastQueue();
+        }, 500);
+    }, 3000);
+}
+
+function showAchievementToast(title, desc) {
+    _toastQueue.push({ title, desc });
+    if (!_toastBusy) _processToastQueue();
 }

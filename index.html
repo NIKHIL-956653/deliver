@@ -7,6 +7,68 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%2300ffcc'/%3E%3C/svg%3E">
   <style>
+    /* SIMPLIFIED MAIN MENU */
+    .simple-mode-cards {
+      display: flex; gap: 10px; justify-content: center;
+      margin: 14px auto; width: 100%; max-width: 400px;
+    }
+    .mode-card {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      gap: 4px; padding: 12px 8px; border: 2px solid #333; border-radius: 12px;
+      cursor: pointer; background: rgba(255,255,255,0.03);
+      transition: all 0.2s; user-select: none;
+    }
+    .mode-card:hover { border-color: #00ffcc66; background: rgba(0,255,204,0.07); }
+    .mode-card.selected {
+      border-color: #00ffcc; background: rgba(0,255,204,0.12);
+      box-shadow: 0 0 14px rgba(0,255,204,0.25);
+    }
+    .mode-card .mc-icon { font-size: 1.6rem; }
+    .mode-card .mc-name { font-size: 0.72rem; font-weight: 700; color: #bbb; letter-spacing: 0.5px; text-align: center; }
+    .mode-card.selected .mc-name { color: #00ffcc; }
+
+    .simple-controls, #standardControls[style*="block"], #sagaControls[style*="block"] {
+      display: flex !important; gap: 12px; flex-wrap: wrap;
+      justify-content: center; width: 100%; max-width: 400px; margin: 0 auto 4px;
+    }
+    .simple-controls label { flex-direction: column; align-items: center; gap: 4px; font-size: 0.78rem; color: #888; }
+
+    .player-config-toggle {
+      width: 100%; max-width: 400px; margin: 6px auto;
+      border: 1px solid #222; border-radius: 10px;
+    }
+    .player-config-toggle summary {
+      padding: 8px 14px; cursor: pointer; color: #666;
+      font-size: 0.8rem; list-style: none; user-select: none;
+      display: flex; align-items: center; gap: 6px;
+      border-radius: 10px;
+    }
+    .player-config-toggle[open] summary { border-radius: 10px 10px 0 0; }
+    .player-config-toggle summary:hover { color: #00ffcc88; background: rgba(0,255,204,0.04); }
+    .player-config-toggle .player-settings-container { padding: 0 14px 14px; }
+
+    /* ORB SIZE SCALE */
+    :root { --orb-scale: 1; }
+    .orb { width: calc(76% * var(--orb-scale)) !important; height: calc(76% * var(--orb-scale)) !important; }
+    .orb.two-orb { width: calc(48% * var(--orb-scale)) !important; height: calc(48% * var(--orb-scale)) !important; }
+    .bombsvg { width: calc(120% * var(--orb-scale)) !important; height: calc(120% * var(--orb-scale)) !important; }
+
+    .size-pills { display: flex; gap: 3px; }
+    .size-pill {
+      padding: 4px 8px; border: 1px solid #333; border-radius: 6px;
+      background: rgba(255,255,255,0.03); color: #666; cursor: pointer;
+      font-size: 0.7rem; font-weight: 700; transition: all 0.15s; line-height: 1;
+    }
+    .size-pill:hover { border-color: #00ffcc55; color: #aaa; }
+    .size-pill.active { border-color: #00ffcc; color: #00ffcc; background: rgba(0,255,204,0.1); }
+
+    .menu-bottom-row {
+      display: flex; align-items: center; gap: 10px;
+      justify-content: center; margin-top: 10px; flex-wrap: wrap;
+      width: 100%; max-width: 400px;
+    }
+    .menu-bottom-row .streak-display { font-size: 0.8rem; }
+
     /* SYSTEM LOADER STYLES */
     #loader {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -30,9 +92,10 @@
     <div class="loading-text">INITIALIZING...</div>
   </div>
 
-  <div id="mainMenu" class="screen active" style="display:none;"> 
-    <h1>Neon Chain Reaction</h1>
+  <div id="mainMenu" class="screen active" style="display:none;">
+    <h1>Chain Reaction</h1>
 
+    <!-- XP Bar -->
     <div class="xp-bar-section">
         <div class="xp-rank-label">
             <span id="xpRankName">Rookie</span>
@@ -42,93 +105,111 @@
             <div id="xpBarFill" class="xp-bar-fill" style="width:0%"></div>
         </div>
     </div>
+    <!-- Coin Display -->
+    <div id="coinDisplay" class="coin-display">🪙 0</div>
+    <button id="claimCoinsBtn" class="claim-coins-btn">🎁 Claim Daily +25 🪙</button>
 
-    <div class="menu-scroll">
-        <div class="menu-section">
-            <h3>Game Setup</h3>
-            <div class="toolbar vertical">
-                <label>Mode:
-                    <select id="gameModeSelect">
-                        <option value="normal" selected>Normal</option>
-                        <option value="timeAttack">Time Attack</option>
-                        <option value="saga">Saga Mode</option>
-                    </select>
-                </label>
-
-                <label>Theme:
-                    <select id="themeSelect">
-                        <option value="default" selected>Classic Neon</option>
-                        <option value="theme-cyberpunk">Cyberpunk 2077</option>
-                        <option value="theme-magma">Magma Core</option>
-                        <option value="theme-matrix">The Matrix</option>
-                        <option value="theme-electric">Electric Storm</option>
-                        <option value="theme-ice">Frozen Tundra</option>
-                        <option value="theme-void">Deep Void</option>
-                        <option value="theme-minimal">Minimal Clean</option>
-                        <option value="theme-flatline">Flatline</option>
-                        <option value="theme-steampunk">Clockwork</option>
-                        </select>
-                </label>
-
-                <div id="sagaMenuInfo"></div>
- 
-                <div id="sagaControls" style="display:none;">
-                    <label>Mode:
-                        <select id="sagaPlayerCountSelect">
-                            <option value="ai" selected>Solo vs AI</option>
-                            <option value="2">1v1 Local</option>
-                            <option value="3">3 Players</option>
-                        </select>
-                    </label>
-                    <label id="sagaAiDifficultyWrapper">AI Level:
-                        <select id="sagaAiDifficultySelect">
-                            <option value="easy">Easy (Smart)</option>
-                            <option value="hard" selected>Hard (Strategic 💀)</option>
-                        </select>
-                    </label>
-                </div>
-
-                <div id="standardControls">
-                    <label>Grid Size:
-                        <select id="gridSelect">
-                            <option value="6x6">6×6 (Quick)</option>
-                            <option value="9x9" selected>9×9 (Standard)</option>
-                            <option value="12x12">12×12 (Epic)</option>
-                        </select>
-                    </label>
-                    <label>Players:
-                        <select id="playerCountSelect">
-                            <option value="2" selected>2 Players</option>
-                            <option value="3">3 Players</option>
-                            <option value="4">4 Players</option>
-                        </select>
-                    </label>
-                    
-                    <label>AI Speed:
-                        <select id="aiSpeedSelect">
-                            <option value="300">Fast ⚡</option>
-                            <option value="1000" selected>Normal</option>
-                        </select>
-                    </label>
-                </div>
-            </div>
+    <!-- Visual Mode Selection -->
+    <div class="simple-mode-cards">
+        <div class="mode-card selected" data-mode="normal">
+            <span class="mc-icon">🎮</span>
+            <span class="mc-name">Normal</span>
         </div>
-
-        <div class="menu-section">
-            <h3>Player Config</h3>
-            <div id="playerSettingsContainer" class="player-settings-container"></div>
+        <div class="mode-card" data-mode="timeAttack">
+            <span class="mc-icon">⏱️</span>
+            <span class="mc-name">Time Attack</span>
+        </div>
+        <div class="mode-card" data-mode="saga">
+            <span class="mc-icon">🗺️</span>
+            <span class="mc-name">Saga</span>
         </div>
     </div>
 
-    <div class="daily-challenge-section">
-        <div id="streakDisplay" class="streak-display"></div>
-        <button id="dailyChallengeBtn" class="btn daily-btn">⚡ Daily Challenge</button>
+    <!-- Hidden selects kept for JS compatibility -->
+    <select id="gameModeSelect" style="display:none">
+        <option value="normal" selected>Normal</option>
+        <option value="timeAttack">Time Attack</option>
+        <option value="saga">Saga Mode</option>
+    </select>
+    <select id="themeSelect" style="display:none">
+        <option value="default" selected>Classic Neon</option>
+        <option value="theme-cyberpunk">Cyberpunk 2077</option>
+        <option value="theme-magma">Magma Core</option>
+        <option value="theme-matrix">The Matrix</option>
+        <option value="theme-electric">Electric Storm</option>
+        <option value="theme-ice">Frozen Tundra</option>
+        <option value="theme-void">Deep Void</option>
+        <option value="theme-minimal">Minimal Clean</option>
+        <option value="theme-flatline">Flatline</option>
+        <option value="theme-steampunk">Clockwork</option>
+    </select>
+
+    <div id="sagaMenuInfo"></div>
+
+    <!-- Saga Controls (JS toggles visibility) -->
+    <div id="sagaControls" style="display:none;" class="simple-controls">
+        <label>Mode:
+            <select id="sagaPlayerCountSelect">
+                <option value="ai" selected>Solo vs AI</option>
+                <option value="2">1v1 Local</option>
+                <option value="3">3 Players</option>
+            </select>
+        </label>
+        <label id="sagaAiDifficultyWrapper">AI Level:
+            <select id="sagaAiDifficultySelect">
+                <option value="easy">Easy</option>
+                <option value="hard" selected>Hard 💀</option>
+            </select>
+        </label>
     </div>
 
+    <!-- Standard Controls (JS toggles visibility) -->
+    <div id="standardControls" class="simple-controls">
+        <label>Grid:
+            <select id="gridSelect">
+                <option value="6x6">6×6 — Quick</option>
+                <option value="9x9" selected>9×9 — Standard</option>
+                <option value="12x12">12×12 — Epic</option>
+            </select>
+        </label>
+        <label>Players:
+            <select id="playerCountSelect">
+                <option value="2" selected>2 Players</option>
+                <option value="3">3 Players</option>
+                <option value="4">4 Players</option>
+            </select>
+        </label>
+        <select id="aiSpeedSelect" style="display:none">
+            <option value="300">Fast ⚡</option>
+            <option value="1000" selected>Normal</option>
+        </select>
+    </div>
+
+    <!-- Player Config (collapsible) -->
+    <details class="player-config-toggle">
+        <summary>⚙️ Customize Players</summary>
+        <div id="playerSettingsContainer" class="player-settings-container"></div>
+    </details>
+
+    <!-- Primary CTA -->
     <div class="menu-footer">
-        <button id="startGameBtn" class="btn large primary">🚀 START GAME</button>
-        <button id="statsBtn" class="btn">📊 Stats</button>
+        <button id="startGameBtn" class="btn large primary">▶ START GAME</button>
     </div>
+
+    <!-- Secondary Actions -->
+    <div class="menu-bottom-row">
+        <div id="streakDisplay" class="streak-display"></div>
+        <button id="dailyChallengeBtn" class="btn daily-btn">⚡ Daily</button>
+        <button id="statsBtn" class="btn">📊 Stats</button>
+        <button id="achievementsBtn" class="btn">🏆 Achievements</button>
+    </div>
+
+    <!-- Win streak + Next achievement hint -->
+    <div id="winStreakMenu" class="win-streak-menu" style="display:none;"></div>
+    <div id="nextAchHint" class="next-ach-hint"></div>
+
+    <!-- Hidden daily-challenge-section div kept for JS compat -->
+    <div class="daily-challenge-section" style="display:none;"></div>
   </div>
 
   <div id="gameView" class="screen">
@@ -192,6 +273,11 @@
         <button id="hintBtn" class="btn small" style="border-color: #ffd700; color: #ffd700;">
             💡 <span id="hintCount">0</span>
         </button>
+        <div class="size-pills" id="orbSizePills">
+            <button class="size-pill" data-mult="0.7">S</button>
+            <button class="size-pill active" data-mult="1.0">M</button>
+            <button class="size-pill" data-mult="1.35">L</button>
+        </div>
         <div id="timerContainer" style="display:none;">
             <span id="timerDisplay"><span id="timeLeft"></span>s</span>
         </div>
@@ -289,6 +375,7 @@
     <div class="modal-content achievement-modal-content">
       <h2 class="modal-title">🏆 Achievements</h2>
       <div id="achievementGrid" class="achievement-grid"></div>
+      <div id="achievementGridFooter" class="ach-grid-footer"></div>
       <div class="modal-actions" style="margin-top:12px;">
         <button id="closeAchievementBtn" class="modal-btn primary">Close</button>
       </div>
@@ -327,6 +414,19 @@
   </div>
 
   <script type="module" src="js/game.js"></script>
+
+  <script>
+    // Sync visual mode cards → hidden gameModeSelect
+    document.querySelectorAll('.mode-card').forEach(card => {
+      card.addEventListener('click', function() {
+        document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+        this.classList.add('selected');
+        const sel = document.getElementById('gameModeSelect');
+        sel.value = this.dataset.mode;
+        sel.dispatchEvent(new Event('change'));
+      });
+    });
+  </script>
 
   <script>
     // GLOBAL SYSTEM LOADER
