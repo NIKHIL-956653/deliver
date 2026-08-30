@@ -33,7 +33,11 @@ function resizeMagma() {
     for (let i = 0; i < columns; i++) droplets[i] = 1;
 }
 
+const MAGMA_TOUCH = matchMedia("(hover: none)").matches;
+let magmaFrame = 0;
 export function drawMagma() {
+    // Phones: draw every 2nd frame and skip the canvas glow (shadowBlur is very costly on mobile GPUs)
+    if (MAGMA_TOUCH && (++magmaFrame % 2)) { animationFrame = requestAnimationFrame(drawMagma); return; }
     if (!magmaSettings.rainOn) {
         canvas.style.display = 'none';
         return;
@@ -51,7 +55,7 @@ export function drawMagma() {
         const x = i * fontSize;
         const y = droplets[i] * fontSize;
 
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = MAGMA_TOUCH ? 0 : 12;
         ctx.shadowColor = '#ff3300';
         ctx.fillStyle = magmaSettings.color;
         ctx.fillText(char, x, y);

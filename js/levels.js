@@ -3184,6 +3184,197 @@ export const SAGA_LEVELS = [
             { x: 8, y: 6, player: 1, count: 3 },
             { x: 6, y: 8, player: 1, count: 3 }
         ]
+    },
+
+    // ══════════════════════════════════════════════════════════════════════
+    // WORLD 5 — NEON FRONTIER (levels 96–105)
+    // ══════════════════════════════════════════════════════════════════════
+
+    // ── LEVEL 96 ─────────────────────────────────────────
+    {
+        id: 78,
+        name: "Neon Frontier",
+        description: "A new frontier opens. Twin pillars split the battlefield.",
+        rows: 9, cols: 9,
+        blockedCells: [[4,1],[4,2],[4,3],[4,5],[4,6],[4,7]],
+        presetOrbs: [
+            { x: 1, y: 1, player: 0, count: 1 },
+            { x: 1, y: 7, player: 0, count: 1 },
+            { x: 7, y: 1, player: 1, count: 2 },
+            { x: 7, y: 7, player: 1, count: 2 },
+            { x: 6, y: 4, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 97 ─────────────────────────────────────────
+    {
+        id: 79,
+        name: "Checker Run",
+        description: "Scattered blocks break every straight line. Weave your chains.",
+        rows: 9, cols: 9,
+        blockedCells: [[1,1],[3,3],[5,1],[7,3],[1,5],[3,7],[5,5],[7,7],[4,4]],
+        presetOrbs: [
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 0, y: 8, player: 0, count: 1 },
+            { x: 8, y: 0, player: 1, count: 1 },
+            { x: 8, y: 8, player: 1, count: 1 },
+            { x: 6, y: 4, player: 1, count: 3 },
+            { x: 4, y: 6, player: 1, count: 3 },
+            { x: 6, y: 6, player: 1, count: 3 }
+        ]
+    },
+
+    // ── LEVEL 98 ─────────────────────────────────────────
+    {
+        id: 80,
+        name: "The Funnel",
+        description: "Walls squeeze the fight into a narrow throat. Hold the choke point.",
+        rows: 10, cols: 8,
+        blockedCells: [[0,3],[1,3],[2,3],[5,3],[6,3],[7,3],[0,6],[1,6],[6,6],[7,6]],
+        presetOrbs: [
+            { x: 3, y: 1, player: 0, count: 1 },
+            { x: 4, y: 1, player: 0, count: 1 },
+            { x: 3, y: 8, player: 1, count: 2 },
+            { x: 4, y: 8, player: 1, count: 2 },
+            { x: 3, y: 5, player: 1, count: 2 },
+            { x: 4, y: 5, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 99 ─────────────────────────────────────────
+    {
+        id: 81,
+        name: "Twin Fortresses",
+        description: "Two walled keeps face each other. Crack theirs before they crack yours.",
+        rows: 9, cols: 11,
+        blockedCells: [[2,2],[3,2],[2,3],[8,2],[7,2],[8,3],[2,6],[3,6],[2,5],[8,6],[7,6],[8,5]],
+        presetOrbs: [
+            { x: 1, y: 4, player: 0, count: 2 },
+            { x: 1, y: 3, player: 0, count: 1 },
+            { x: 9, y: 4, player: 1, count: 2 },
+            { x: 9, y: 5, player: 1, count: 2 },
+            { x: 5, y: 4, player: 1, count: 3 },
+            { x: 9, y: 3, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 100 ─────────────────────────────────────────
+    {
+        id: 82,
+        name: "Spiral Gate",
+        description: "One path in, coiling to the centre. The enemy waits at the heart.",
+        rows: 9, cols: 9,
+        blockedCells: [[1,1],[2,1],[3,1],[4,1],[5,1],[6,1],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[1,3],[1,4],[1,5],[1,6],[1,7],[2,7],[3,7],[4,7],[5,7],[3,3],[4,3],[5,3],[5,4],[3,5],[4,5]],
+        presetOrbs: [
+            { x: 0, y: 0, player: 0, count: 1 },
+            { x: 0, y: 8, player: 0, count: 1 },
+            { x: 4, y: 4, player: 1, count: 3 },
+            { x: 6, y: 4, player: 1, count: 2 },
+            { x: 2, y: 4, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 101 ─────────────────────────────────────────
+    {
+        id: 83,
+        name: "Ember Fields",
+        description: "Open ground, heavy resistance. The enemy is dug in on every edge.",
+        rows: 10, cols: 10,
+        blockedCells: [[3,4],[6,4],[3,5],[6,5]],
+        presetOrbs: [
+            { x: 4, y: 8, player: 0, count: 2 },
+            { x: 5, y: 8, player: 0, count: 2 },
+            { x: 0, y: 0, player: 1, count: 1 },
+            { x: 9, y: 0, player: 1, count: 1 },
+            { x: 4, y: 0, player: 1, count: 2 },
+            { x: 5, y: 0, player: 1, count: 2 },
+            { x: 0, y: 4, player: 1, count: 2 },
+            { x: 9, y: 4, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 102 ─────────────────────────────────────────
+    {
+        id: 84,
+        name: "Crossfire Alley",
+        description: "Four open lanes, enemies at every end. Pick a lane and punch through.",
+        rows: 11, cols: 9,
+        blockedCells: [[1,2],[2,2],[6,2],[7,2],[1,5],[2,5],[6,5],[7,5],[1,8],[2,8],[6,8],[7,8]],
+        presetOrbs: [
+            { x: 4, y: 10, player: 0, count: 2 },
+            { x: 4, y: 9, player: 0, count: 1 },
+            { x: 4, y: 0, player: 1, count: 2 },
+            { x: 0, y: 0, player: 1, count: 1 },
+            { x: 8, y: 0, player: 1, count: 1 },
+            { x: 0, y: 5, player: 1, count: 2 },
+            { x: 8, y: 5, player: 1, count: 2 },
+            { x: 4, y: 4, player: 1, count: 3 }
+        ]
+    },
+
+    // ── LEVEL 103 ─────────────────────────────────────────
+    {
+        id: 85,
+        name: "Shattered Ring",
+        description: "A broken ring of walls. The gaps are the only doors — they know it.",
+        rows: 11, cols: 11,
+        blockedCells: [[3,2],[4,2],[6,2],[7,2],[2,3],[8,3],[2,4],[8,4],[2,6],[8,6],[2,7],[8,7],[3,8],[4,8],[6,8],[7,8]],
+        presetOrbs: [
+            { x: 5, y: 5, player: 0, count: 2 },
+            { x: 0, y: 0, player: 1, count: 1 },
+            { x: 10, y: 0, player: 1, count: 1 },
+            { x: 0, y: 10, player: 1, count: 1 },
+            { x: 10, y: 10, player: 1, count: 1 },
+            { x: 5, y: 0, player: 1, count: 2 },
+            { x: 5, y: 10, player: 1, count: 2 },
+            { x: 0, y: 5, player: 1, count: 2 },
+            { x: 10, y: 5, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 104 ─────────────────────────────────────────
+    {
+        id: 86,
+        name: "Last Light",
+        description: "Their army outnumbers you three to one. Make every chain count.",
+        rows: 12, cols: 10,
+        blockedCells: [[4,3],[5,3],[4,8],[5,8],[0,5],[0,6],[9,5],[9,6]],
+        presetOrbs: [
+            { x: 4, y: 10, player: 0, count: 2 },
+            { x: 5, y: 10, player: 0, count: 2 },
+            { x: 4, y: 1, player: 1, count: 3 },
+            { x: 5, y: 1, player: 1, count: 3 },
+            { x: 1, y: 1, player: 1, count: 2 },
+            { x: 8, y: 1, player: 1, count: 2 },
+            { x: 2, y: 5, player: 1, count: 2 },
+            { x: 7, y: 5, player: 1, count: 2 },
+            { x: 4, y: 6, player: 1, count: 2 },
+            { x: 5, y: 6, player: 1, count: 2 }
+        ]
+    },
+
+    // ── LEVEL 105 — BOSS 14 ─────────────────────────────────────────
+    {
+        id: 114, isBoss: true,
+        name: "The Overlord",
+        description: "Everything they have. Everything you've learned. Finish it.",
+        rows: 12, cols: 12,
+        blockedCells: [[3,3],[8,3],[3,8],[8,8],[5,0],[6,0],[0,5],[0,6],[11,5],[11,6],[5,5],[6,6]],
+        presetOrbs: [
+            { x: 5, y: 11, player: 0, count: 2 },
+            { x: 6, y: 11, player: 0, count: 2 },
+            { x: 5, y: 10, player: 0, count: 2 },
+            { x: 6, y: 10, player: 0, count: 1 },
+            { x: 5, y: 1, player: 1, count: 3 },
+            { x: 6, y: 1, player: 1, count: 3 },
+            { x: 1, y: 1, player: 1, count: 2 },
+            { x: 10, y: 1, player: 1, count: 2 },
+            { x: 1, y: 6, player: 1, count: 2 },
+            { x: 10, y: 6, player: 1, count: 2 },
+            { x: 3, y: 4, player: 1, count: 3 },
+            { x: 8, y: 4, player: 1, count: 3 },
+            { x: 5, y: 6, player: 1, count: 3 }
+        ]
     }
 
 ];

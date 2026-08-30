@@ -55,7 +55,6 @@ function saveData(data) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-// --- NEW: THEME FUNCTIONS ---
 export function saveTheme(themeClass) {
     const data = loadData();
     data.settings.theme = themeClass;
@@ -66,7 +65,17 @@ export function getSavedTheme() {
     const data = loadData();
     return data.settings.theme;
 }
-// ----------------------------
+
+export function saveColorblindMode(enabled) {
+    const data = loadData();
+    data.settings.colorblind = !!enabled;
+    saveData(data);
+}
+
+export function getColorblindMode() {
+    const data = loadData();
+    return !!data.settings.colorblind;
+}
 
 // ── XP FUNCTIONS ──────────────────────────────────────────────────────────────
 export function getXPInfo() {
@@ -231,40 +240,27 @@ export function getAllLevelStars() {
     return JSON.parse(localStorage.getItem('neon_stars') || '{}');
 }
 
-// ── UI: Show Toast Notification ──────────────────────────────────────────────
-const _toastQueue = [];
-let _toastBusy = false;
+// ── REPLAYS ───────────────────────────────────────────────────────────────────
+const REPLAYS_KEY = 'neon_replays';
+const MAX_REPLAYS = 20;
 
-function _processToastQueue() {
-    if (_toastQueue.length === 0) { _toastBusy = false; return; }
-    _toastBusy = true;
-    const { title, desc } = _toastQueue.shift();
-
-    const toast = document.createElement('div');
-    toast.className = 'achievement-toast';
-    toast.innerHTML = `
-        <div class="ach-toast-label">ACHIEVEMENT UNLOCKED</div>
-        <div class="ach-toast-body">
-            <div class="ach-toast-icon">🏆</div>
-            <div class="ach-toast-text">
-                <div class="ach-toast-title">${title}</div>
-                <div class="ach-toast-desc">${desc}</div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(toast);
-    requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
-
-    setTimeout(() => {
-        toast.classList.add('hide');
-        setTimeout(() => {
-            toast.remove();
-            _processToastQueue();
-        }, 500);
-    }, 3000);
+export function saveReplay(replay) {
+    const replays = getReplays();
+    replays.unshift(replay);
+    if (replays.length > MAX_REPLAYS) replays.length = MAX_REPLAYS;
+    localStorage.setItem(REPLAYS_KEY, JSON.stringify(replays));
 }
 
+export function getReplays() {
+    return JSON.parse(localStorage.getItem(REPLAYS_KEY) || '[]');
+}
+
+export function deleteReplay(id) {
+    const replays = getReplays().filter(r => r.id !== id);
+    localStorage.setItem(REPLAYS_KEY, JSON.stringify(replays));
+}
+
+// ── UI: Achievement notification → routed through the on-board info panel ─────
 function showAchievementToast(title, desc) {
-    _toastQueue.push({ title, desc });
-    if (!_toastBusy) _processToastQueue();
+    document.dispatchEvent(new CustomEvent("chainmarch:achievement", { detail: { title, desc } }));
 }

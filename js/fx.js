@@ -29,17 +29,36 @@ let particles = [];
 let rings = [];   // For Shockwave blast skin
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
+// Cap the backing-store resolution: a 3× phone screen is ~9× the pixels of 1× for
+// particles nobody can tell apart. 1.5× on mobile, 2× on desktop.
+const DPR = Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2);
 function resize() {
-    canvas.width = window.innerWidth * window.devicePixelRatio;
-    canvas.height = window.innerHeight * window.devicePixelRatio;
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    canvas.width = Math.round(window.innerWidth * DPR);
+    canvas.height = Math.round(window.innerHeight * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 }
 window.addEventListener('resize', resize);
 resize();
 
-// CORE ANIMATION LOOP
+// CORE ANIMATION LOOP — runs only while there is something to draw.
+// Idle: no rAF, no clearRect, no GPU upload of a full-screen canvas 60×/s.
+let fxRunning = false;
+let fxIdleFrames = 0;
+const MAX_PARTICLES = isMobile ? 600 : 2000;
+function ensureFXLoop() {
+    if (fxRunning) return;
+    fxRunning = true;
+    fxIdleFrames = 0;
+    requestAnimationFrame(updateFX);
+}
 function updateFX() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!particles.length && !rings.length) {
+        if (++fxIdleFrames > 2) { fxRunning = false; return; }   // one extra clear, then sleep
+        requestAnimationFrame(updateFX);
+        return;
+    }
+    fxIdleFrames = 0;
 
     // --- Shockwave rings ---
     for (let i = rings.length - 1; i >= 0; i--) {
@@ -84,7 +103,16 @@ function updateFX() {
     ctx.globalAlpha = 1;
     requestAnimationFrame(updateFX);
 }
-requestAnimationFrame(updateFX);
+// Wrap the arrays' push so every spawner automatically wakes the loop and respects the cap.
+for (const arr of [particles, rings]) {
+    const push = arr.push.bind(arr);
+    arr.push = (...items) => {
+        if (arr === particles && particles.length + items.length > MAX_PARTICLES) particles.splice(0, items.length);
+        const r = push(...items);
+        ensureFXLoop();
+        return r;
+    };
+}
 
 export function spawnParticles(x, y, color) {
     const count = isMobile ? 12 : 24; 

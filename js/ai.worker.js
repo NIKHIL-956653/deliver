@@ -3,7 +3,7 @@
 import { makeAIMove } from './ai.js';
 
 self.onmessage = function ({ data }) {
-  const { board, current, difficulty, rows, cols, playerCount, id } = data;
-  const move = makeAIMove(board, current, difficulty, rows, cols, playerCount);
+  const { board, current, difficulty, rows, cols, playerCount, skill = 1, id } = data;
+  const move = makeAIMove(board, current, difficulty, rows, cols, playerCount, skill);
   self.postMessage({ move, id });
 };

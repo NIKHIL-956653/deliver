@@ -2,51 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
   <title>Neon Chain Reaction</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#050608" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Chain Reaction" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%2300ffcc'/%3E%3C/svg%3E">
   <style>
-    /* SIMPLIFIED MAIN MENU */
-    .simple-mode-cards {
-      display: flex; gap: 10px; justify-content: center;
-      margin: 14px auto; width: 100%; max-width: 400px;
-    }
-    .mode-card {
-      flex: 1; display: flex; flex-direction: column; align-items: center;
-      gap: 4px; padding: 12px 8px; border: 2px solid #333; border-radius: 12px;
-      cursor: pointer; background: rgba(255,255,255,0.03);
-      transition: all 0.2s; user-select: none;
-    }
-    .mode-card:hover { border-color: #00ffcc66; background: rgba(0,255,204,0.07); }
-    .mode-card.selected {
-      border-color: #00ffcc; background: rgba(0,255,204,0.12);
-      box-shadow: 0 0 14px rgba(0,255,204,0.25);
-    }
-    .mode-card .mc-icon { font-size: 1.6rem; }
-    .mode-card .mc-name { font-size: 0.72rem; font-weight: 700; color: #bbb; letter-spacing: 0.5px; text-align: center; }
-    .mode-card.selected .mc-name { color: #00ffcc; }
-
-    .simple-controls, #standardControls[style*="block"], #sagaControls[style*="block"] {
-      display: flex !important; gap: 12px; flex-wrap: wrap;
-      justify-content: center; width: 100%; max-width: 400px; margin: 0 auto 4px;
-    }
-    .simple-controls label { flex-direction: column; align-items: center; gap: 4px; font-size: 0.78rem; color: #888; }
-
-    .player-config-toggle {
-      width: 100%; max-width: 400px; margin: 6px auto;
-      border: 1px solid #222; border-radius: 10px;
-    }
-    .player-config-toggle summary {
-      padding: 8px 14px; cursor: pointer; color: #666;
-      font-size: 0.8rem; list-style: none; user-select: none;
-      display: flex; align-items: center; gap: 6px;
-      border-radius: 10px;
-    }
-    .player-config-toggle[open] summary { border-radius: 10px 10px 0 0; }
-    .player-config-toggle summary:hover { color: #00ffcc88; background: rgba(0,255,204,0.04); }
-    .player-config-toggle .player-settings-container { padding: 0 14px 14px; }
-
     /* ORB SIZE SCALE */
     :root { --orb-scale: 1; }
     .orb { width: calc(76% * var(--orb-scale)) !important; height: calc(76% * var(--orb-scale)) !important; }
@@ -92,177 +59,284 @@
     <div class="loading-text">INITIALIZING...</div>
   </div>
 
+
+  <!-- ── PAYWALL ─────────────────────────────────────────────────────── -->
+  <div id="paywallBackdrop" class="pw-backdrop"></div>
+  <div id="paywallSheet" class="pw-sheet">
+    <button id="paywallClose" class="pw-close" type="button" aria-label="Close">×</button>
+    <div class="pw-hero">
+      <div class="pw-star">★</div>
+      <div id="paywallTitle" class="pw-title">Go Premium</div>
+      <div class="pw-sub">Everything unlocked. Cancel anytime.</div>
+    </div>
+    <ul id="paywallBenefits" class="pw-benefits"></ul>
+    <div id="paywallPlans" class="pw-plans"></div>
+    <button id="paywallBuy" class="pw-buy" type="button">Start Premium</button>
+    <button id="paywallRestore" class="pw-restore" type="button">Restore purchase</button>
+    <div class="pw-legal">Billed through Google Play. Renews automatically until cancelled.</div>
+  </div>
+
+  <!-- ── SETTINGS SHEET (works from menu and in-game) ─────────────────── -->
+  <div id="settingsBackdrop"></div>
+  <div id="systemSidebar" class="settings-sheet">
+    <div class="ss-grab"></div>
+    <div class="ss-head">
+      <span class="ss-title">Settings</span>
+      <button id="closeSidebar" class="ss-done" type="button">Done</button>
+    </div>
+    <div class="ss-tabs">
+      <button type="button" class="ss-tab active" data-tab="look">Look</button>
+      <button type="button" class="ss-tab" data-tab="fx">Effects</button>
+      <button type="button" class="ss-tab" data-tab="game">Game</button>
+    </div>
+
+    <div class="ss-body">
+      <div class="ss-pane active" data-pane="look">
+        <div class="ss-section">
+          <div class="sidebar-header">BOARD</div>
+          <div class="chips" data-for="boardStyle">
+            <button type="button" class="chip active" data-value="tiles">Tiles</button>
+            <button type="button" class="chip" data-value="wire">Neon lines</button>
+          </div>
+        </div>
+        <div class="ss-section">
+          <div class="sidebar-header">THEME</div>
+          <select id="sidebarThemeSelect" style="display:none"><option value="default">Neon</option><option value="theme-matrix">Matrix</option><option value="theme-magma">Magma</option><option value="theme-cyberpunk">Cyber</option><option value="theme-ice">Ice</option><option value="theme-void">Void</option><option value="theme-electric">Storm</option><option value="theme-minimal">Minimal</option><option value="theme-flatline">Flatline</option><option value="theme-steampunk">Clockwork</option><option value="theme-wood">Wood</option><option value="theme-metal">Metal</option></select>
+          <div id="themeSwatches" class="theme-grid"><button type="button" class="theme-sw" data-theme="default"><span class="sw" style="background:linear-gradient(135deg,#47f2ff,#0a2a30)"></span><span>Neon</span></button><button type="button" class="theme-sw" data-theme="theme-matrix"><span class="sw" style="background:linear-gradient(135deg,#00ff41,#001a06)"></span><span>Matrix</span></button><button type="button" class="theme-sw" data-theme="theme-magma"><span class="sw" style="background:linear-gradient(135deg,#ff6a00,#3a0a00)"></span><span>Magma</span></button><button type="button" class="theme-sw" data-theme="theme-cyberpunk"><span class="sw" style="background:linear-gradient(135deg,#ff2bd6,#2b002b)"></span><span>Cyber</span></button><button type="button" class="theme-sw" data-theme="theme-ice"><span class="sw" style="background:linear-gradient(135deg,#8fd3ff,#021020)"></span><span>Ice</span></button><button type="button" class="theme-sw" data-theme="theme-void"><span class="sw" style="background:linear-gradient(135deg,#a066ff,#0a0014)"></span><span>Void</span></button><button type="button" class="theme-sw" data-theme="theme-electric"><span class="sw" style="background:linear-gradient(135deg,#ffe066,#030316)"></span><span>Storm</span></button><button type="button" class="theme-sw" data-theme="theme-minimal"><span class="sw" style="background:#f4f1eb"></span><span>Minimal</span></button><button type="button" class="theme-sw" data-theme="theme-flatline"><span class="sw" style="background:linear-gradient(135deg,#ff3355,#111)"></span><span>Flatline</span></button><button type="button" class="theme-sw" data-theme="theme-steampunk"><span class="sw" style="background:linear-gradient(135deg,#c98a3a,#1a1004)"></span><span>Clockwork</span></button><button type="button" class="theme-sw" data-theme="theme-wood"><span class="sw" style="background:linear-gradient(135deg,#8b5a2b,#2a1608)"></span><span>Wood</span></button><button type="button" class="theme-sw" data-theme="theme-metal"><span class="sw" style="background:linear-gradient(135deg,#c0c8d0,#2a2f38)"></span><span>Metal</span></button></div>
+        </div>
+        <div class="ss-section">
+          <div class="sidebar-header">ORB SKIN</div>
+          <div id="skinSelector" class="skin-selector"></div>
+        </div>
+        <div class="ss-section">
+          <div class="sidebar-header">BLAST SKIN</div>
+          <div id="blastSkinSelector" class="skin-selector"></div>
+        </div>
+      </div>
+
+      <div class="ss-pane" data-pane="fx">
+        <div id="matrixSidebarControls" class="system-controls" style="display: none;">
+          <div class="sidebar-header">MATRIX</div>
+          <button id="toggleRain" class="matrix-btn active">RAIN: ON</button>
+          <button id="toggleSymbols" class="matrix-btn">MODE: KANJI</button>
+          <button id="toggleFlash" class="matrix-btn active">FLASH: ON</button>
+        </div>
+        <div id="cyberpunkSidebarControls" class="system-controls" style="display: none;">
+          <div class="sidebar-header">CYBERLINK HUD</div>
+          <button id="toggleScanlines" class="cyber-btn active">SCANLINES: ON</button>
+          <button id="toggleGlitch" class="cyber-btn">GLITCH: OFF</button>
+          <button id="toggleHUD" class="cyber-btn active">HUD: SHARP</button>
+        </div>
+        <div id="magmaSidebarControls" class="system-controls" style="display: none;">
+          <div class="sidebar-header">MAGMA CORE</div>
+          <button id="toggleLava" class="magma-btn active">LAVA: ON</button>
+          <button id="toggleHeat" class="magma-btn active">HEAT: ON</button>
+        </div>
+        <div id="noFxNote" class="ss-note">This theme has no extra effects. Matrix, Cyberpunk and Magma do.</div>
+      </div>
+
+      <div class="ss-pane" data-pane="game">
+        <div class="ss-section">
+          <div class="sidebar-header">AI SPEED</div>
+          <select id="aiSpeedSelect" style="display:none">
+            <option value="300">Fast ⚡</option>
+            <option value="1000" selected>Normal</option>
+          </select>
+          <div class="chips" data-for="aiSpeedSelect">
+            <button type="button" class="chip" data-value="300">Fast</button>
+            <button type="button" class="chip" data-value="1000">Normal</button>
+          </div>
+        </div>
+        <div class="ss-section">
+          <div class="sidebar-header">HAPTICS</div>
+          <button id="hapticsToggle" class="matrix-btn active" type="button">HAPTICS: ON</button>
+        </div>
+        <div class="ss-section">
+          <div class="sidebar-header">ORB SIZE</div>
+          <div class="size-pills" id="orbSizePills">
+            <button class="size-pill" data-mult="0.7">Small</button>
+            <button class="size-pill active" data-mult="1.0">Normal</button>
+            <button class="size-pill" data-mult="1.2">Large</button>
+          </div>
+        </div>
+        <div class="ss-section" id="devPremiumWrap">
+          <div class="sidebar-header">DEVELOPER</div>
+          <button id="devPremiumToggle" class="matrix-btn" type="button">PREMIUM (TEST): OFF</button>
+        </div>
+        <div class="ss-section">
+          <div class="sidebar-header">ACCESSIBILITY</div>
+          <button id="colorblindToggle" class="matrix-btn">COLORBLIND: OFF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="mainMenu" class="screen active" style="display:none;">
-    <h1>Chain Reaction</h1>
+    <div class="menu-wrap">
 
-    <!-- XP Bar -->
-    <div class="xp-bar-section">
-        <div class="xp-rank-label">
-            <span id="xpRankName">Rookie</span>
-            <span id="xpAmount">0 XP</span>
+      <!-- ── PROFILE HEADER ───────────────────────────────────────── -->
+      <section class="profile-card">
+        <div class="pc-top">
+          <div class="pc-id">
+            <div class="pc-avatar" id="pcAvatar"></div>
+            <div class="pc-name">
+              <span id="xpRankName" class="pc-rank">Rookie</span>
+              <span id="xpAmount" class="pc-xp">0 XP</span>
+            </div>
+          </div>
+          <div class="pc-right">
+            <button id="premiumBadge" class="premium-badge" type="button">★ Go Premium</button>
+            <button id="claimCoinsBtn" class="ps-claim" type="button">🎁 +25</button>
+          </div>
         </div>
-        <div class="xp-bar-track">
-            <div id="xpBarFill" class="xp-bar-fill" style="width:0%"></div>
+        <div class="xp-bar-section">
+          <div class="xp-bar-track"><div id="xpBarFill" class="xp-bar-fill" style="width:0%"></div></div>
         </div>
-    </div>
-    <!-- Coin Display -->
-    <div id="coinDisplay" class="coin-display">🪙 0</div>
-    <button id="claimCoinsBtn" class="claim-coins-btn">🎁 Claim Daily +25 🪙</button>
+        <button id="statsBtn" class="pc-stats" type="button" title="Open stats">
+          <span class="pc-stat"><b id="coinDisplay" class="coin-display">0</b><i>COINS</i></span>
+          <span class="pc-stat"><b id="msStreak" class="c-orange">0</b><i>STREAK</i></span>
+          <span class="pc-stat"><b id="msWins">0</b><i>AI WINS</i></span>
+          <span class="pc-stat"><b id="msStars" class="c-gold">0</b><i>STARS</i></span>
+        </button>
+        <div id="streakDisplay" class="streak-display" style="display:none"></div>
+        <div id="winStreakMenu" class="win-streak-menu" style="display:none;"></div>
+      </section>
 
-    <!-- Visual Mode Selection -->
-    <div class="simple-mode-cards">
-        <div class="mode-card selected" data-mode="normal">
-            <span class="mc-icon">🎮</span>
-            <span class="mc-name">Normal</span>
+      <!-- ── RESUME (shown only when a match was interrupted) ─────── -->
+      <section id="resumeCard" class="resume-card" style="display:none">
+        <div class="rc-text">
+          <span class="rc-kicker">UNFINISHED MATCH</span>
+          <span id="resumeTitle" class="rc-title">Saga · Level 12</span>
+          <span id="resumeMeta" class="rc-meta">14 moves · 3 min ago</span>
         </div>
-        <div class="mode-card" data-mode="timeAttack">
-            <span class="mc-icon">⏱️</span>
-            <span class="mc-name">Time Attack</span>
+        <div class="rc-actions">
+          <button id="discardResumeBtn" class="rc-discard" type="button" title="Discard">✕</button>
+          <button id="resumeBtn" class="rc-resume" type="button">▶ Resume</button>
         </div>
-        <div class="mode-card" data-mode="saga">
-            <span class="mc-icon">🗺️</span>
-            <span class="mc-name">Saga</span>
-        </div>
-    </div>
+      </section>
 
-    <!-- Hidden selects kept for JS compatibility -->
-    <select id="gameModeSelect" style="display:none">
+      <!-- ── MODE CARDS ───────────────────────────────────────────── -->
+      <div class="menu-label">PLAY</div>
+      <div class="mode-cards">
+        <button class="mode-card selected" data-mode="normal" type="button">
+          <span class="mc-icon">🎮</span>
+          <span class="mc-name">Quick</span>
+          <span class="mc-sub" id="mcSubNormal">vs AI</span>
+        </button>
+        <button class="mode-card" data-mode="saga" type="button">
+          <span class="mc-icon">🗺️</span>
+          <span class="mc-name">Saga</span>
+          <span class="mc-sub" id="mcSubSaga">95 levels</span>
+        </button>
+        <button class="mode-card" data-mode="timeAttack" type="button">
+          <span class="mc-icon">⏱️</span>
+          <span class="mc-name">Blitz</span>
+          <span class="mc-sub" id="mcSubTime">120s</span>
+        </button>
+      </div>
+
+      <!-- Hidden selects kept for JS compatibility -->
+      <select id="gameModeSelect" style="display:none">
         <option value="normal" selected>Normal</option>
         <option value="timeAttack">Time Attack</option>
         <option value="saga">Saga Mode</option>
-    </select>
-    <select id="themeSelect" style="display:none">
-        <option value="default" selected>Classic Neon</option>
-        <option value="theme-cyberpunk">Cyberpunk 2077</option>
-        <option value="theme-magma">Magma Core</option>
-        <option value="theme-matrix">The Matrix</option>
-        <option value="theme-electric">Electric Storm</option>
-        <option value="theme-ice">Frozen Tundra</option>
-        <option value="theme-void">Deep Void</option>
-        <option value="theme-minimal">Minimal Clean</option>
-        <option value="theme-flatline">Flatline</option>
-        <option value="theme-steampunk">Clockwork</option>
-    </select>
+      </select>
+      <select id="themeSelect" style="display:none"><option value="default">Neon</option><option value="theme-matrix">Matrix</option><option value="theme-magma">Magma</option><option value="theme-cyberpunk">Cyber</option><option value="theme-ice">Ice</option><option value="theme-void">Void</option><option value="theme-electric">Storm</option><option value="theme-minimal">Minimal</option><option value="theme-flatline">Flatline</option><option value="theme-steampunk">Clockwork</option><option value="theme-wood">Wood</option><option value="theme-metal">Metal</option></select>
+      <div id="sagaMenuInfo" style="display:none"></div>
 
-    <div id="sagaMenuInfo"></div>
-
-    <!-- Saga Controls (JS toggles visibility) -->
-    <div id="sagaControls" style="display:none;" class="simple-controls">
-        <label>Mode:
-            <select id="sagaPlayerCountSelect">
-                <option value="ai" selected>Solo vs AI</option>
-                <option value="2">1v1 Local</option>
-                <option value="3">3 Players</option>
+      <!-- ── OPTIONS (chips bound to the hidden selects) ──────────── -->
+      <section class="mode-options">
+        <div id="sagaControls" class="opt-rows" style="display:none;">
+          <div class="opt-line">
+            <span class="opt-label">Opponent</span>
+            <select id="sagaPlayerCountSelect" style="display:none">
+              <option value="ai" selected>Solo vs AI</option>
+              <option value="2">1v1 Local</option>
+              <option value="3">3 Players</option>
             </select>
-        </label>
-        <label id="sagaAiDifficultyWrapper">AI Level:
-            <select id="sagaAiDifficultySelect">
-                <option value="easy">Easy</option>
-                <option value="hard" selected>Hard 💀</option>
+            <div class="chips" data-for="sagaPlayerCountSelect">
+              <button type="button" class="chip" data-value="ai">Solo vs AI</button>
+              <button type="button" class="chip" data-value="2">1v1</button>
+              <button type="button" class="chip" data-value="3">3P</button>
+            </div>
+          </div>
+          <div class="opt-line">
+            <span class="opt-label" id="sagaAiDifficultyWrapper">AI</span>
+            <select id="sagaAiDifficultySelect" style="display:none">
+              <option value="easy">Easy</option>
+              <option value="hard" selected>Hard 💀</option>
             </select>
-        </label>
-    </div>
+            <div class="chips" data-for="sagaAiDifficultySelect" id="sagaAiChips">
+              <button type="button" class="chip" data-value="easy">Easy</button>
+              <button type="button" class="chip" data-value="hard">Hard</button>
+            </div>
+            <span class="opt-spacer"></span>
+            <span class="opt-label">Colour</span>
+            <input type="color" id="sagaPlayerColor" value="#00ffcc" class="colour-dot">
+          </div>
+        </div>
 
-    <!-- Standard Controls (JS toggles visibility) -->
-    <div id="standardControls" class="simple-controls">
-        <label>Grid:
-            <select id="gridSelect">
-                <option value="6x6">6×6 — Quick</option>
-                <option value="9x9" selected>9×9 — Standard</option>
-                <option value="12x12">12×12 — Epic</option>
+        <div id="standardControls" class="opt-rows">
+          <div class="opt-line">
+            <span class="opt-label">Grid</span>
+            <select id="gridSelect" style="display:none">
+              <option value="6x6">6×6 — Quick</option>
+              <option value="6x9">6×9 — Tall</option>
+              <option value="9x9" selected>9×9 — Standard</option>
+              <option value="8x12">8×12 — Tall Epic</option>
+              <option value="12x12">12×12 — Epic</option>
             </select>
-        </label>
-        <label>Players:
-            <select id="playerCountSelect">
-                <option value="2" selected>2 Players</option>
-                <option value="3">3 Players</option>
-                <option value="4">4 Players</option>
+            <div class="chips" data-for="gridSelect">
+              <button type="button" class="chip" data-value="6x6">6×6</button>
+              <button type="button" class="chip" data-value="6x9">6×9</button>
+              <button type="button" class="chip" data-value="9x9">9×9</button>
+              <button type="button" class="chip" data-value="8x12">8×12</button>
+              <button type="button" class="chip" data-value="12x12">12×12</button>
+            </div>
+          </div>
+          <div class="opt-line">
+            <span class="opt-label">Players</span>
+            <select id="playerCountSelect" style="display:none">
+              <option value="2" selected>2 Players</option>
+              <option value="3">3 Players</option>
+              <option value="4">4 Players</option>
             </select>
-        </label>
-        <select id="aiSpeedSelect" style="display:none">
-            <option value="300">Fast ⚡</option>
-            <option value="1000" selected>Normal</option>
-        </select>
-    </div>
+            <div class="chips" data-for="playerCountSelect">
+              <button type="button" class="chip" data-value="2">2</button>
+              <button type="button" class="chip" data-value="3">3</button>
+              <button type="button" class="chip" data-value="4">4</button>
+            </div>
+          </div>
+        </div>
 
-    <!-- Player Config (collapsible) -->
-    <details class="player-config-toggle">
-        <summary>⚙️ Customize Players</summary>
-        <div id="playerSettingsContainer" class="player-settings-container"></div>
-    </details>
+        <details class="player-config-toggle" id="playerConfigToggle">
+          <summary>⚙️ Customize players &amp; AI opponents</summary>
+          <div id="playerSettingsContainer" class="player-settings-container"></div>
+        </details>
+      </section>
 
-    <!-- Primary CTA -->
-    <div class="menu-footer">
+      <!-- ── CTAs ─────────────────────────────────────────────────── -->
+      <div class="menu-footer">
         <button id="startGameBtn" class="btn large primary">▶ START GAME</button>
+      </div>
+      <button id="dailyChallengeBtn" class="daily-cta">⚡ Daily Challenge</button>
+
+      <div id="nextAchHint" class="next-ach-hint"></div>
+      <button id="installBtn" class="install-btn" type="button" style="display:none">📲 Install app — play offline</button>
+      <div class="daily-challenge-section" style="display:none;"></div>
     </div>
 
-    <!-- Secondary Actions -->
-    <div class="menu-bottom-row">
-        <div id="streakDisplay" class="streak-display"></div>
-        <button id="dailyChallengeBtn" class="btn daily-btn">⚡ Daily</button>
-        <button id="statsBtn" class="btn">📊 Stats</button>
-        <button id="achievementsBtn" class="btn">🏆 Achievements</button>
-    </div>
-
-    <!-- Win streak + Next achievement hint -->
-    <div id="winStreakMenu" class="win-streak-menu" style="display:none;"></div>
-    <div id="nextAchHint" class="next-ach-hint"></div>
-
-    <!-- Hidden daily-challenge-section div kept for JS compat -->
-    <div class="daily-challenge-section" style="display:none;"></div>
+    <!-- ── BOTTOM NAV ───────────────────────────────────────────── -->
+    <nav class="bottom-nav">
+      <button type="button" class="bn active" id="bnHome"><span class="bn-ic">🏠</span>Home</button>
+      <button type="button" class="bn" id="leaderboardBtn"><span class="bn-ic">🌐</span>Ranks</button>
+      <button type="button" class="bn" id="achievementsBtn"><span class="bn-ic">🏆</span>Trophies</button>
+      <button type="button" class="bn" id="replaysBtn"><span class="bn-ic">📽️</span>Replays</button>
+      <button type="button" class="bn" id="menuSettingsBtn"><span class="bn-ic">⚙️</span>Settings</button>
+    </nav>
   </div>
 
   <div id="gameView" class="screen">
-    <div id="systemSidebar">
-        <button id="closeSidebar" class="close-btn">&times;</button>
-
-        <div class="system-controls" style="display:block;">
-            <div class="sidebar-header">THEME</div>
-            <select id="sidebarThemeSelect" style="width:100%; padding:6px 8px; background:#111; color:#00ffcc; border:1px solid #00ffcc33; border-radius:6px; font-size:0.9rem;">
-                <option value="default">Classic Neon</option>
-                <option value="theme-cyberpunk">Cyberpunk 2077</option>
-                <option value="theme-magma">Magma Core</option>
-                <option value="theme-matrix">The Matrix</option>
-                <option value="theme-electric">Electric Storm</option>
-                <option value="theme-ice">Frozen Tundra</option>
-                <option value="theme-void">Deep Void</option>
-                <option value="theme-minimal">Minimal Clean</option>
-                <option value="theme-flatline">Flatline</option>
-                <option value="theme-steampunk">Clockwork</option>
-            </select>
-        </div>
-
-        <div class="system-controls" style="display:block; margin-top:10px;">
-            <div class="sidebar-header">ORB SKIN</div>
-            <div id="skinSelector" class="skin-selector"></div>
-        </div>
-
-        <div class="system-controls" style="display:block; margin-top:10px;">
-            <div class="sidebar-header">BLAST SKIN</div>
-            <div id="blastSkinSelector" class="skin-selector"></div>
-        </div>
-
-        <div id="matrixSidebarControls" class="system-controls" style="display: none;">
-            <div class="sidebar-header">SYSTEM CONTROLS</div>
-            <button id="toggleRain" class="matrix-btn active">RAIN: ON</button>
-            <button id="toggleSymbols" class="matrix-btn">MODE: KANJI</button>
-            <button id="toggleFlash" class="matrix-btn active">FLASH: ON</button>
-        </div>
-
-        <div id="cyberpunkSidebarControls" class="system-controls" style="display: none;">
-            <div class="sidebar-header">CYBERLINK HUD</div>
-            <button id="toggleScanlines" class="cyber-btn active">SCANLINES: ON</button>
-            <button id="toggleGlitch" class="cyber-btn">GLITCH: OFF</button>
-            <button id="toggleHUD" class="cyber-btn active">HUD: SHARP</button>
-        </div>
-
-        <div id="magmaSidebarControls" class="system-controls" style="display: none;">
-            <div class="sidebar-header">MAGMA CORE</div>
-            <button id="toggleLava" class="magma-btn active">LAVA: ON</button>
-            <button id="toggleHeat" class="magma-btn active">HEAT: ON</button>
-        </div>
-    </div>
-
     <div class="game-header">
         <button id="backBtn" class="btn small">⬅ Menu</button>
         <button id="sidebarToggle" class="btn small">⚙️</button>
@@ -273,11 +347,6 @@
         <button id="hintBtn" class="btn small" style="border-color: #ffd700; color: #ffd700;">
             💡 <span id="hintCount">0</span>
         </button>
-        <div class="size-pills" id="orbSizePills">
-            <button class="size-pill" data-mult="0.7">S</button>
-            <button class="size-pill active" data-mult="1.0">M</button>
-            <button class="size-pill" data-mult="1.35">L</button>
-        </div>
         <div id="timerContainer" style="display:none;">
             <span id="timerDisplay"><span id="timeLeft"></span>s</span>
         </div>
@@ -291,12 +360,26 @@
         <button id="sagaSkipBtn" style="display:none; margin-top:6px; padding:5px 14px; border:1px solid #ffd700; color:#ffd700; background:rgba(255,215,0,0.08); border-radius:8px; cursor:pointer; font-size:0.85rem;">📺 Watch Ad to Skip Level</button>
     </div>
 
+    <div id="infoPanel" class="info-panel">
+        <div id="infoPanelMsg" class="info-panel-msg"></div>
+    </div>
+
     <div class="board-container">
         <div id="board" class="board"></div>
     </div>
     <button id="soundBtn" class="floating-btn">🔊</button>
-    <div id="comboFlash" class="combo-flash"></div>
-    <div id="blastMilestone" class="blast-milestone"></div>
+
+    <!-- Replay controls bar (shown only during replay playback) -->
+    <div id="replayControls" style="display:none;" class="replay-controls-bar">
+      <button id="replayRestartBtn" class="btn small">⏮</button>
+      <button id="replayPlayBtn" class="btn small">⏸</button>
+      <button id="replayStepBtn" class="btn small">⏭ Step</button>
+      <span id="replayCounter" style="color:#00ffcc; font-size:0.8rem; min-width:60px; text-align:center;">0 / 0</span>
+      <button class="replay-speed-btn btn small active" data-ms="800">1×</button>
+      <button class="replay-speed-btn btn small" data-ms="400">2×</button>
+      <button class="replay-speed-btn btn small" data-ms="150">4×</button>
+      <button id="replayExitBtn" class="btn small" style="border-color:#ff4757;color:#ff4757;">✕ Exit</button>
+    </div>
   </div>
 
   <div id="levelIntroOverlay" class="level-intro-overlay" style="display:none;">
@@ -309,6 +392,27 @@
     </div>
   </div>
 
+  <!-- ── LEVEL COMPLETE ─────────────────────────────────────────────── -->
+  <div id="levelCompleteOverlay" class="lc-overlay" style="display:none;">
+    <div class="lc-card">
+      <div class="lc-kicker">LEVEL COMPLETE</div>
+      <div id="lcLevel" class="lc-level">LEVEL 1</div>
+      <div id="lcName" class="lc-name">—</div>
+      <div class="lc-stars">
+        <span class="lc-star">★</span><span class="lc-star big">★</span><span class="lc-star">★</span>
+      </div>
+      <div id="lcMoves" class="lc-moves">—</div>
+      <div id="lcXP" class="lc-xp">+0 XP</div>
+      <div id="lcDaily" class="lc-daily" style="display:none"></div>
+      <div class="lc-actions">
+        <button id="lcMenu" class="modal-btn secondary" type="button">Menu</button>
+        <button id="lcRetry" class="modal-btn secondary" type="button">Retry</button>
+        <button id="lcNext" class="modal-btn primary" type="button">Next Level ▶</button>
+      </div>
+      <div class="lc-hint">tap to skip</div>
+    </div>
+  </div>
+
   <div id="gameModal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
       <h2 id="modalTitle" class="modal-title">Game Over</h2>
@@ -318,6 +422,7 @@
         <button id="modalReplayBtn" class="modal-btn secondary">Play Again</button>
         <button id="modalNextBtn" class="modal-btn primary" style="display:none;">Next Level ▶</button>
         <button id="modalSkipBtn" class="modal-btn skip-btn" style="display:none;">📺 Watch Ad to Skip</button>
+        <button id="modalLeaderboardBtn" class="modal-btn primary" style="display:none;">🌐 Submit Score</button>
       </div>
     </div>
   </div>
@@ -367,6 +472,38 @@
       <div class="modal-actions">
         <button id="statsToAchievementsBtn" class="modal-btn secondary">🏆 Achievements</button>
         <button id="closeStatsBtn" class="modal-btn primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="leaderboardModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <h2 class="modal-title">🌐 Leaderboard</h2>
+      <div style="display:flex; gap:8px; justify-content:center; margin-bottom:12px; flex-wrap:wrap;">
+        <select id="lbModeTab" style="background:#111;color:#00ffcc;border:1px solid #00ffcc33;border-radius:6px;padding:5px 10px;font-size:0.85rem;">
+          <option value="normal">Normal</option>
+          <option value="timeAttack">Time Attack</option>
+        </select>
+        <select id="lbGridFilter" style="background:#111;color:#00ffcc;border:1px solid #00ffcc33;border-radius:6px;padding:5px 10px;font-size:0.85rem;">
+          <option value="6x6">6×6</option>
+          <option value="9x9" selected>9×9</option>
+          <option value="12x12">12×12</option>
+        </select>
+        <button id="lbRefreshBtn" class="btn small">↻</button>
+      </div>
+      <div id="leaderboardBody" style="min-height:80px;"></div>
+      <div class="modal-actions" style="margin-top:12px;">
+        <button id="closeLeaderboardBtn" class="modal-btn primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="replaysModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content replays-modal-content">
+      <h2 class="modal-title">📽️ Replays</h2>
+      <div id="replaysList" class="replays-list"></div>
+      <div class="modal-actions" style="margin-top:12px;">
+        <button id="closeReplaysBtn" class="modal-btn primary">Close</button>
       </div>
     </div>
   </div>
@@ -426,6 +563,68 @@
         sel.dispatchEvent(new Event('change'));
       });
     });
+
+    // Chip groups → hidden <select>s (game.js keeps reading the selects)
+    document.querySelectorAll('.chips[data-for]').forEach(group => {
+      const sel = document.getElementById(group.dataset.for);
+      if (!sel) return;
+      const paint = () => group.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.value === sel.value));
+      group.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+        sel.value = c.dataset.value; sel.dispatchEvent(new Event('change')); paint();
+      }));
+      sel.addEventListener('change', paint);
+      paint();
+    });
+    // Saga: hide the AI chips when not playing vs AI
+    const spc = document.getElementById('sagaPlayerCountSelect');
+    const syncAiChips = () => { const on = spc.value === 'ai'; document.getElementById('sagaAiChips').style.display = on ? '' : 'none'; document.getElementById('sagaAiDifficultyWrapper').style.display = on ? '' : 'none'; };
+    spc.addEventListener('change', syncAiChips); syncAiChips();
+
+    // Settings sheet: tabs, theme swatches, open/close
+    const sheet = document.getElementById('systemSidebar');
+    const backdrop = document.getElementById('settingsBackdrop');
+    document.querySelectorAll('.ss-tab').forEach(t => t.addEventListener('click', () => {
+      document.querySelectorAll('.ss-tab').forEach(x => x.classList.toggle('active', x === t));
+      document.querySelectorAll('.ss-pane').forEach(p => p.classList.toggle('active', p.dataset.pane === t.dataset.tab));
+    }));
+    const themeSel = document.getElementById('sidebarThemeSelect');
+    const paintSw = () => {
+      document.querySelectorAll('.theme-sw').forEach(s => s.classList.toggle('active', s.dataset.theme === themeSel.value));
+      const anyFx = ['matrixSidebarControls','cyberpunkSidebarControls','magmaSidebarControls'].some(id => document.getElementById(id).style.display !== 'none');
+      document.getElementById('noFxNote').style.display = anyFx ? 'none' : '';
+    };
+    document.querySelectorAll('.theme-sw').forEach(s => s.addEventListener('click', () => {
+      themeSel.value = s.dataset.theme; themeSel.dispatchEvent(new Event('change')); setTimeout(paintSw, 0);
+    }));
+    themeSel.addEventListener('change', () => setTimeout(paintSw, 0));
+    const openSettings = () => { document.getElementById('sidebarToggle')?.click(); backdrop.classList.add('active'); setTimeout(paintSw, 0); };
+    const closeSettings = () => { sheet.classList.remove('active'); backdrop.classList.remove('active'); };
+    document.getElementById('menuSettingsBtn').addEventListener('click', openSettings);
+    backdrop.addEventListener('click', closeSettings);
+    document.getElementById('closeSidebar').addEventListener('click', closeSettings);
+    // in-game gear button also gets the backdrop
+    document.getElementById('sidebarToggle')?.addEventListener('click', () => { backdrop.classList.add('active'); setTimeout(paintSw, 0); });
+    document.getElementById('bnHome').addEventListener('click', () => document.querySelector('.menu-wrap').scrollIntoView({behavior:'smooth'}));
+    setTimeout(paintSw, 100);
+  </script>
+
+  <script>
+    // PWA: service worker (offline) + "Add to Home Screen" prompt capture
+    if ("serviceWorker" in navigator && (!/localhost|127\.0\.0\.1/.test(location.hostname) || location.search.includes("sw=1"))) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+    }
+    window.__installPrompt = null;
+    window.addEventListener("beforeinstallprompt", e => {
+      e.preventDefault(); window.__installPrompt = e;
+      const btn = document.getElementById("installBtn"); if (btn) btn.style.display = "";
+    });
+    document.getElementById("installBtn")?.addEventListener("click", async () => {
+      const p = window.__installPrompt; if (!p) return;
+      p.prompt(); const r = await p.userChoice; window.__installPrompt = null;
+      document.getElementById("installBtn").style.display = "none";
+      try { window.neonTrack?.("pwa_install_" + r.outcome); } catch {}
+    });
+    window.addEventListener("appinstalled", () => { const b = document.getElementById("installBtn"); if (b) b.style.display = "none"; });
   </script>
 
   <script>

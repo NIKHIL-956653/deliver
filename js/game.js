@@ -11,8 +11,17 @@ import { recordGameEnd, tryUnlockAchievement, loadData, saveTheme, getSavedTheme
          addXP, getXPInfo, saveSkin, getSavedSkin,
          saveBlastSkin, getSavedBlastSkin,
          getCoins, addCoins, spendCoins,
-         canClaimDailyCoins, claimDailyCoins } from "./storage.js";
+         canClaimDailyCoins, claimDailyCoins,
+         saveColorblindMode, getColorblindMode,
+         saveReplay, getReplays, deleteReplay } from "./storage.js";
 import { SAGA_LEVELS } from "./levels.js";
+import { haptic, hapticsEnabled, setHaptics, hapticsSupported } from "./haptics.js";
+import { track, reportError, timer as trackTimer } from "./analytics.js";
+window.neonTrack = track;
+import { isPremium, onEntitlementChange, refreshEntitlement, purchasePremium, restorePurchases,
+         getOfferings, isMockBilling, setMockPremium, getOwnedSkins, addOwnedSkin,
+         canUseTheme, canUseOrbSkin, canUseBlastSkin, PREMIUM_BENEFITS } from "./premium.js";
+import { submitScore, fetchLeaderboard, LEADERBOARD_ENABLED } from "./leaderboard.js";
 import { initMatrix, drawMatrix, stopMatrix, triggerMatrixFlash, matrixSettings } from "./matrix.js";
 import { initMagma, drawMagma, stopMagma, magmaSettings as lavaRainSettings } from "./magma.js";
 
@@ -46,7 +55,23 @@ let sagaCurrentLevel = 0;
 let sagaConsecutiveFails = 0;
 let isDailyMode = false;
 let hintsUsed = 0;
+let playerMoves = 0;         // human (player 0) moves this game — used for saga stars
+let resolving = false;       // true while a chain reaction is animating (blocks input/undo/timer)
+let replayCurrentId = null;  // id of the replay being watched (for Restart)
+let turnsSinceHint = 0;      // adaptive: how long since the player last asked for help
+let lastNudgeTurn = -99;     // adaptive: avoid nagging every turn
+let mercyDebug = false;      // set true in console (window.mercyDebug = true) to log AI skill
 let gameCount = parseInt(localStorage.getItem("gameCount") || "0", 10);
+
+// ── REPLAY STATE ──────────────────────────────────────────────────────────────
+let replayRecord = null;   // records current game for saving
+let isReplaying = false;   // true when watching a replay
+let replayMoves = [];      // moves being replayed
+let replayIndex = 0;
+let replayPaused = false;
+let replaySpeedMs = 800;
+let replayTimer = null;
+// ─────────────────────────────────────────────────────────────────────────────
 
 let cyberSettings = { scanlines: true };
 let localMagmaSettings = { lavaActive: true, heatActive: true };
@@ -56,6 +81,9 @@ function init() {
   initMagma();
 
   $("#startGameBtn")?.addEventListener("click", startGame);
+  document.getElementById("resumeBtn")?.addEventListener("click", resumeMatch);
+  document.getElementById("discardResumeBtn")?.addEventListener("click", () => { track("match_discard"); clearSavedMatch(); });
+  document.addEventListener("pointerdown", e => { if (e.target.closest(".mode-card, .chip, .bn, .tile, .btn, .modal-btn, .daily-cta, .ss-tab")) haptic("tap"); }, { passive: true });
   $("#backBtn")?.addEventListener("click", backToMenu);
   undoBtn?.addEventListener("click", undoMove);
 
@@ -89,6 +117,14 @@ function init() {
     closeModal();
     backToMenu();
   });
+
+  document.getElementById("lcNext")?.addEventListener("click", () => {
+    hideLevelComplete();
+    sagaCurrentLevel = Math.min(sagaCurrentLevel + 1, SAGA_LEVELS.length - 1);
+    resetGame();
+  });
+  document.getElementById("lcRetry")?.addEventListener("click", () => { hideLevelComplete(); resetGame(); });
+  document.getElementById("lcMenu")?.addEventListener("click", () => { hideLevelComplete(); backToMenu(); });
 
   document.getElementById("modalNextBtn")?.addEventListener("click", () => {
     sagaCurrentLevel = Math.min(sagaCurrentLevel + 1, SAGA_LEVELS.length - 1);
@@ -154,15 +190,14 @@ function init() {
   // Also open achievements from menu footer via a shortcut on the stats modal
   // Orb skin: load saved + render selector
   const savedSkin = getSavedSkin();
-  if (savedSkin && savedSkin !== "default") document.body.classList.add(savedSkin);
+  if (savedSkin && savedSkin !== "default" && canUseOrbSkin(savedSkin)) document.body.classList.add(savedSkin);
+  else if (savedSkin && savedSkin !== "default") saveSkin("default");
+  if (!canUseBlastSkin(getSavedBlastSkin())) saveBlastSkin("default");
   renderSkinSelector();
   renderBlastSkinSelector();
+  initPremiumUI();
 
-  window.addEventListener("resize", () => {
-    if (document.getElementById("gameView")?.classList.contains("active")) {
-      setCellSize(cols, rows);
-    }
-  });
+  window.addEventListener("resize", refitBoard);
 
   document.getElementById("sagaPlayerCountSelect")?.addEventListener("change", e => {
     const wrapper = document.getElementById("sagaAiDifficultyWrapper");
@@ -182,20 +217,19 @@ function init() {
   const savedTheme = getSavedTheme();
 
   if (savedTheme) {
-    applyTheme(savedTheme);
-    if (themeSelect) themeSelect.value = savedTheme;
-    if (sidebarThemeSelect) sidebarThemeSelect.value = savedTheme;
+    const t = canUseTheme(savedTheme) ? savedTheme : "default";
+    applyTheme(t);
+    if (themeSelect) themeSelect.value = t;
+    if (sidebarThemeSelect) sidebarThemeSelect.value = t;
   }
 
   themeSelect?.addEventListener("change", e => {
-    applyTheme(e.target.value);
-    saveTheme(e.target.value);
+    if (!tryTheme(e.target.value)) { e.target.value = currentThemeId(); return; }
     if (sidebarThemeSelect) sidebarThemeSelect.value = e.target.value;
   });
 
   sidebarThemeSelect?.addEventListener("change", e => {
-    applyTheme(e.target.value);
-    saveTheme(e.target.value);
+    if (!tryTheme(e.target.value)) { e.target.value = currentThemeId(); return; }
     if (themeSelect) themeSelect.value = e.target.value;
     openSidebar(); // refresh sidebar controls to match new theme
   });
@@ -262,6 +296,178 @@ function init() {
   });
 
   handleModeChange();
+
+  // ── LEADERBOARD ────────────────────────────────────────────────────────────
+  document.getElementById("leaderboardBtn")?.addEventListener("click", openLeaderboardModal);
+  document.getElementById("closeLeaderboardBtn")?.addEventListener("click", () => {
+    document.getElementById("leaderboardModal").style.display = "none";
+  });
+  document.getElementById("lbModeTab")?.addEventListener("change", openLeaderboardModal);
+  document.getElementById("lbGridFilter")?.addEventListener("change", openLeaderboardModal);
+  document.getElementById("lbRefreshBtn")?.addEventListener("click", openLeaderboardModal);
+  // Show/hide leaderboard submit button in win modal based on config
+  const lbModalBtn = document.getElementById("modalLeaderboardBtn");
+  if (lbModalBtn && !LEADERBOARD_ENABLED) lbModalBtn.style.display = "none";
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // ── REPLAY CONTROLS ────────────────────────────────────────────────────────
+  document.getElementById("replaysBtn")?.addEventListener("click", openReplaysModal);
+  document.getElementById("closeReplaysBtn")?.addEventListener("click", () => {
+    document.getElementById("replaysModal").style.display = "none";
+  });
+  document.getElementById("replayPlayBtn")?.addEventListener("click", () => {
+    replayPaused = !replayPaused;
+    updateReplayUI();
+    if (!replayPaused) replayStep();
+  });
+  document.getElementById("replayStepBtn")?.addEventListener("click", () => {
+    if (!isReplaying || replayIndex >= replayMoves.length) return;
+    replayPaused = true;
+    clearTimeout(replayTimer);
+    const { x, y } = replayMoves[replayIndex++];
+    updateReplayUI();
+    makeMove(x, y);
+  });
+  document.getElementById("replayRestartBtn")?.addEventListener("click", () => {
+    const replays = getReplays();
+    const current_replay = replays.find(r => r.id === replayCurrentId);
+    if (current_replay) {
+      clearTimeout(replayTimer);
+      startReplayPlayback(current_replay);
+    }
+  });
+  document.getElementById("replayExitBtn")?.addEventListener("click", stopReplay);
+  document.querySelectorAll(".replay-speed-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".replay-speed-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      replaySpeedMs = parseInt(btn.dataset.ms, 10);
+    });
+  });
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // ── COLORBLIND MODE ────────────────────────────────────────────────────────
+  const cbToggle = document.getElementById("colorblindToggle");
+  if (getColorblindMode()) {
+    document.body.classList.add("colorblind-mode");
+    if (cbToggle) cbToggle.textContent = "COLORBLIND: ON";
+    if (cbToggle) cbToggle.classList.add("active");
+  }
+  cbToggle?.addEventListener("click", () => {
+    const on = document.body.classList.toggle("colorblind-mode");
+    cbToggle.textContent = on ? "COLORBLIND: ON" : "COLORBLIND: OFF";
+    cbToggle.classList.toggle("active", on);
+    saveColorblindMode(on);
+    paintAll(); // re-render orbs with/without patterns
+  });
+  // ─────────────────────────────────────────────────────────────────────────
+}
+
+// ── PREMIUM ───────────────────────────────────────────────────────────────────
+function currentThemeId() {
+  return ["theme-matrix","theme-cyberpunk","theme-magma","theme-electric","theme-ice","theme-void","theme-minimal","theme-flatline","theme-steampunk","theme-wood","theme-metal"]
+    .find(c => document.body.classList.contains(c)) || "default";
+}
+// Apply a theme if allowed, else show the paywall. Returns true when applied.
+function tryTheme(t) {
+  if (!canUseTheme(t)) { openPaywall("theme", t); return false; }
+  applyTheme(t);
+  saveTheme(t);
+  return true;
+}
+
+function paintPremiumLocks() {
+  const prem = isPremium();
+  document.querySelectorAll(".theme-sw").forEach(s => s.classList.toggle("locked", !canUseTheme(s.dataset.theme)));
+  document.body.classList.toggle("is-premium", prem);
+  const badge = document.getElementById("premiumBadge");
+  if (badge) { badge.textContent = prem ? "★ PREMIUM" : "★ Go Premium"; badge.classList.toggle("on", prem); }
+  const devT = document.getElementById("devPremiumToggle");
+  if (devT) { devT.textContent = prem ? "PREMIUM (TEST): ON" : "PREMIUM (TEST): OFF"; devT.classList.toggle("active", prem); }
+}
+
+function initPremiumUI() {
+  // Dev toggle only where there is no real billing (web / localhost)
+  const devWrap = document.getElementById("devPremiumWrap");
+  if (devWrap) devWrap.style.display = isMockBilling() ? "" : "none";
+  document.getElementById("devPremiumToggle")?.addEventListener("click", () => setMockPremium(!isPremium()));
+  // Board style: wireframe (default, theme shows through) or tiles
+  const bsKey = "neon_board_style";
+  const applyBoardStyle = s => { document.body.classList.toggle("board-wire", s !== "tiles"); localStorage.setItem(bsKey, s); document.querySelectorAll(".chips[data-for=boardStyle] .chip").forEach(ch => ch.classList.toggle("active", ch.dataset.value === s)); refitBoard(); };
+  applyBoardStyle(localStorage.getItem(bsKey) || "tiles");   // default: the original tile board; "wire" is the optional lines look
+  document.querySelectorAll(".chips[data-for=boardStyle] .chip").forEach(ch => ch.addEventListener("click", () => applyBoardStyle(ch.dataset.value)));
+  // Phones: default to the tall 6×9 board (fills a portrait screen, ~45% bigger cells than 9×9)
+  if (IS_TOUCH && !localStorage.getItem("neon_grid_touched") && gridSelect) { gridSelect.value = "6x9"; gridSelect.dispatchEvent(new Event("change")); }
+  gridSelect?.addEventListener("change", () => localStorage.setItem("neon_grid_touched", "1"));
+  const hb = document.getElementById("hapticsToggle");
+  if (hb) {
+    const paintH = () => { hb.textContent = hapticsEnabled() ? "HAPTICS: ON" : "HAPTICS: OFF"; hb.classList.toggle("active", hapticsEnabled()); };
+    if (!hapticsSupported()) hb.closest(".ss-section").style.display = "none";
+    hb.addEventListener("click", () => { setHaptics(!hapticsEnabled()); paintH(); });
+    paintH();
+  }
+  document.getElementById("premiumBadge")?.addEventListener("click", () => { if (!isPremium()) openPaywall("menu"); });
+  document.getElementById("paywallClose")?.addEventListener("click", closePaywall);
+  document.getElementById("paywallBackdrop")?.addEventListener("click", closePaywall);
+  document.getElementById("paywallRestore")?.addEventListener("click", async () => {
+    const r = await restorePurchases();
+    postInfoMsg(r?.ok ? "✓ Premium restored" : "No purchase found", r?.ok ? "#00ffcc" : "#ff8800", 2500);
+    if (r?.ok) closePaywall();
+  });
+  document.getElementById("paywallBuy")?.addEventListener("click", async () => {
+    const plan = document.querySelector(".pw-plan.active")?.dataset.plan || "monthly";
+    const btn = document.getElementById("paywallBuy");
+    btn.disabled = true; btn.textContent = "…";
+    const r = await purchasePremium(plan);
+    track(r?.ok ? "purchase_success" : "purchase_fail", { plan, reason: _paywallPending?.reason });
+    btn.disabled = false; btn.textContent = "Start Premium";
+    if (r?.ok) { closePaywall(); postInfoMsg("★ Welcome to Premium!", "#ffd700", 3000); }
+  });
+  document.querySelectorAll(".pw-plan").forEach(p => p.addEventListener("click", () => {
+    document.querySelectorAll(".pw-plan").forEach(x => x.classList.toggle("active", x === p));
+  }));
+  const list = document.getElementById("paywallBenefits");
+  if (list) list.innerHTML = PREMIUM_BENEFITS.map(b => `<li><span>${b.icon}</span>${b.text}</li>`).join("");
+
+  onEntitlementChange(prem => {
+    paintPremiumLocks();
+    renderSkinSelector();
+    renderBlastSkinSelector();
+    if (!prem) {                                  // subscription lapsed → back to free defaults
+      if (!canUseTheme(currentThemeId())) tryTheme("default");
+      if (!canUseOrbSkin(getSavedSkin())) applySkin("default");
+      if (!canUseBlastSkin(getSavedBlastSkin())) applyBlastSkin("default");
+    }
+  });
+  paintPremiumLocks();
+  refreshEntitlement();                           // async: native shell answers here on Android
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshEntitlement(); });
+}
+
+let _paywallPending = null;
+async function openPaywall(reason = "menu", itemId = "") {
+  _paywallPending = { reason, itemId };
+  track("paywall_open", { reason, item: itemId });
+  const sheet = document.getElementById("paywallSheet");
+  if (!sheet) return;
+  const title = document.getElementById("paywallTitle");
+  if (title) title.textContent = reason === "theme" ? "Unlock every theme" : reason === "skin" ? "Unlock every skin" : "Go Premium";
+  const offers = await getOfferings();
+  const wrap = document.getElementById("paywallPlans");
+  if (wrap) wrap.innerHTML = offers.map((o, i) => `
+    <button type="button" class="pw-plan${i === offers.length - 1 ? " active" : ""}" data-plan="${o.id}">
+      <span class="pw-plan-title">${o.title}</span><span class="pw-plan-price">${o.price}</span>${o.badge ? `<span class="pw-badge">${o.badge}</span>` : ""}
+    </button>`).join("");
+  wrap?.querySelectorAll(".pw-plan").forEach(p => p.addEventListener("click", () => {
+    wrap.querySelectorAll(".pw-plan").forEach(x => x.classList.toggle("active", x === p));
+  }));
+  sheet.classList.add("active");
+  document.getElementById("paywallBackdrop")?.classList.add("active");
+}
+function closePaywall() {
+  document.getElementById("paywallSheet")?.classList.remove("active");
+  document.getElementById("paywallBackdrop")?.classList.remove("active");
+  _paywallPending = null;
 }
 
 function openSidebar() {
@@ -278,17 +484,18 @@ function openSidebar() {
     document.getElementById("magmaSidebarControls").style.display = "block";
 
   // Sync sidebar theme dropdown with current theme
-  const current = ["theme-matrix","theme-cyberpunk","theme-magma","theme-electric","theme-ice","theme-void","theme-minimal","theme-flatline","theme-steampunk"]
+  const current = ["theme-matrix","theme-cyberpunk","theme-magma","theme-electric","theme-ice","theme-void","theme-minimal","theme-flatline","theme-steampunk","theme-wood","theme-metal"]
     .find(c => document.body.classList.contains(c)) || "default";
   const sidebarThemeSelect = document.getElementById("sidebarThemeSelect");
   if (sidebarThemeSelect) sidebarThemeSelect.value = current;
 }
 
 function applyTheme(t) {
+  track("theme_apply", { theme: t });
   document.body.classList.remove(
     "theme-cyberpunk", "theme-magma", "theme-matrix",
     "theme-electric", "theme-ice", "theme-void", "theme-minimal",
-    "theme-flatline", "theme-steampunk",
+    "theme-flatline", "theme-steampunk", "theme-wood", "theme-metal",
     "scanlines-active", "lava-active"
   );
 
@@ -310,13 +517,15 @@ function applyTheme(t) {
       lavaRainSettings.rainOn = true;
       drawMagma();
     }
-  } else if (["theme-electric","theme-ice","theme-void","theme-minimal","theme-flatline","theme-steampunk"].includes(t)) {
+  } else if (["theme-electric","theme-ice","theme-void","theme-minimal","theme-flatline","theme-steampunk","theme-wood","theme-metal"].includes(t)) {
     document.body.classList.add(t);
   }
 }
 
+let levelTimer = null;
 function startGame() {
   gameCount++;
+  track("game_start_click", { mode, grid: gridSelect?.value, players: players.length, ai: playerTypes.some(p => p?.type === "ai") });
   localStorage.setItem("gameCount", gameCount.toString());
 
   document.getElementById("mainMenu").style.display = "none";
@@ -340,6 +549,7 @@ function startGame() {
 }
 
 function backToMenu() {
+  hideLevelComplete();
   playing = false;
   isDailyMode = false;
   clearTimeout(aiTimeout);
@@ -380,6 +590,7 @@ function updateDailyUI() {
 
 function startDailyChallenge() {
   if (isDailyCompleted()) return;
+  track("daily_start", { streak: getDailyStreak() });
   isDailyMode = true;
   mode = "saga";
   sagaCurrentLevel = getDailyLevelIndex();
@@ -389,54 +600,55 @@ function startDailyChallenge() {
   resetGame();
 }
 
-// ── COMBO FLASH ──────────────────────────────────────────────────────────────
-function showComboFlash(count) {
-  const el = document.getElementById("comboFlash");
-  if (!el) return;
-  el.classList.remove("active");
-  void el.offsetWidth; // force reflow to restart animation
-  el.textContent = `COMBO ×${count}!`;
-  el.classList.add("active");
+// ── INFO PANEL — unified on-board message box ────────────────────────────────
+const _ipQueue = [];
+let _ipBusy = false;
 
-  // Only award achievements/XP when the human player (index 0) triggers the combo
-  if (current !== 0) return;
-
-  if (count >= 20) {
-    unlockAchievement("combo_20", "Annihilator", "Triggered a 20+ wave chain reaction");
-    grantXP(100);
-  } else if (count >= 15) {
-    unlockAchievement("combo_15", "Supernova", "Triggered a 15+ wave chain reaction");
-    grantXP(75);
-  } else if (count >= 10) {
-    unlockAchievement("combo_10", "Nuclear!", "Triggered a 10+ wave chain reaction");
-    grantXP(50);
-  } else if (count >= 5) {
-    unlockAchievement("combo_5", "Chain Reaction!", "Triggered a 5+ wave combo");
-    grantXP(20);
-  } else if (count >= 3) {
-    unlockAchievement("combo_3", "First Chain", "Triggered your first 3+ wave chain");
-    grantXP(10);
-  }
+function postInfoMsg(text, color, duration = 2500) {
+  _ipQueue.push({ text, color, duration });
+  if (!_ipBusy) _drainInfoPanel();
 }
 
-// ── BLAST MILESTONE ANNOUNCER ─────────────────────────────────────────────────
-function showBlastMilestone(n) {
-  const tiers = [
-    { min: 40, tier: 6, label: "DOMINATION BLAST" },
-    { min: 30, tier: 5, label: "MEGA CORE BLAST" },
-    { min: 25, tier: 4, label: "NOVA BLAST" },
-    { min: 20, tier: 3, label: "QUANTUM BURST" },
-    { min: 15, tier: 2, label: "OVERLOAD" },
-    { min: 10, tier: 1, label: "CHAIN REACTOR" },
-  ];
-  const match = tiers.find(t => n >= t.min);
-  if (!match) return;
-  const el = document.getElementById("blastMilestone");
-  if (!el) return;
-  el.classList.remove("active", "tier-1", "tier-2", "tier-3", "tier-4", "tier-5", "tier-6");
-  void el.offsetWidth; // force reflow to restart animation
-  el.textContent = match.label;
-  el.classList.add("active", `tier-${match.tier}`);
+function _drainInfoPanel() {
+  if (!_ipQueue.length) { _ipBusy = false; return; }
+  _ipBusy = true;
+  const { text, color, duration } = _ipQueue.shift();
+  const el = document.getElementById("infoPanelMsg");
+  if (!el) { _ipBusy = false; return; }
+
+  el.classList.remove("show");
+  el.style.setProperty("--ip-color", color);
+  el.textContent = text;
+
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("show")));
+
+  setTimeout(() => {
+    el.classList.remove("show");
+    setTimeout(_drainInfoPanel, 200);
+  }, duration);
+}
+
+// Achievement events from storage.js
+document.addEventListener("chainmarch:achievement", e => {
+  const { title, desc } = e.detail;
+  postInfoMsg(`🏆 ${title}\n${desc}`, "#ffd700", 3500);
+});
+
+// ── CHAIN REACTION COUNTER ────────────────────────────────────────────────────
+function showChainBadge(waveCount) {
+  if (current !== 0) return;
+
+  const tierColors = ["#00ffcc","#ff8800","#cc44ff","#ff2266","#ffd700","#ffffff"];
+  const tierIdx    = waveCount >= 25 ? 5 : waveCount >= 20 ? 4 : waveCount >= 15 ? 3
+                   : waveCount >= 10 ? 2 : waveCount >= 5  ? 1 : 0;
+
+  if (waveCount >= 20)      { unlockAchievement("combo_20", "Annihilator",    "Triggered a 20+ wave chain reaction"); grantXP(100); }
+  else if (waveCount >= 15) { unlockAchievement("combo_15", "Supernova",      "Triggered a 15+ wave chain reaction"); grantXP(75); }
+  else if (waveCount >= 10) { unlockAchievement("combo_10", "Nuclear!",       "Triggered a 10+ wave chain reaction"); grantXP(50); }
+  else if (waveCount >= 5)  { unlockAchievement("combo_5",  "Chain Reaction!","Triggered a 5+ wave combo");           grantXP(20); }
+  else if (waveCount >= 3)  { unlockAchievement("combo_3",  "First Chain",    "Triggered your first 3+ wave chain");  grantXP(10); }
+
+  postInfoMsg(`⚡ ×${waveCount} chain`, tierColors[tierIdx], 2000);
 }
 
 // ── XP & RANK ────────────────────────────────────────────────────────────────
@@ -502,16 +714,16 @@ function updateXPBar() {
 
 function updateCoinDisplay() {
   const el = document.getElementById("coinDisplay");
-  if (el) el.textContent = `🪙 ${getCoins()}`;
+  if (el) el.textContent = `${getCoins()}`;
 
   const claimBtn = document.getElementById("claimCoinsBtn");
   if (!claimBtn) return;
   if (canClaimDailyCoins()) {
-    claimBtn.textContent = "🎁 Claim Daily +25 🪙";
+    claimBtn.textContent = "🎁 Claim +25";
     claimBtn.disabled = false;
     claimBtn.classList.remove("claimed");
   } else {
-    claimBtn.textContent = "✓ Claimed Today";
+    claimBtn.textContent = "✓ Claimed";
     claimBtn.disabled = true;
     claimBtn.classList.add("claimed");
   }
@@ -595,7 +807,34 @@ function getNextClosestAchievement() {
   return best || { ...locked[0], current: 0, target: 1 };
 }
 
+// ── MENU CARD SUBTITLES + SMART CTA ──────────────────────────────────────────
+function updateMenuCards() {
+  const saved = parseInt(localStorage.getItem("sagaProgress") || "0", 10);
+  const stars = Object.values(getAllLevelStars()).reduce((a, b) => a + b, 0);
+  const sagaSub = document.getElementById("mcSubSaga");
+  if (sagaSub) sagaSub.textContent = saved > 0
+    ? `Level ${Math.min(saved + 1, SAGA_LEVELS.length)} / ${SAGA_LEVELS.length}${stars ? ` · ⭐ ${stars}` : ""}`
+    : `${SAGA_LEVELS.length} levels`;
+  const normalSub = document.getElementById("mcSubNormal");
+  const wins = Object.values(loadData().stats.wins).reduce((a, b) => a + b, 0);
+  if (normalSub) normalSub.textContent = wins > 0 ? `${wins} AI win${wins === 1 ? "" : "s"}` : "vs AI or friends";
+  const timeSub = document.getElementById("mcSubTime");
+  const sw = getCounters().speedWins || 0;
+  if (timeSub) timeSub.textContent = sw > 0 ? `${sw} blitz win${sw === 1 ? "" : "s"}` : "120s blitz";
+  const st = document.getElementById("msStreak"); if (st) st.textContent = getDailyStreak();
+  const mw = document.getElementById("msWins");   if (mw) mw.textContent = wins;
+  const ms = document.getElementById("msStars");  if (ms) ms.textContent = stars;
+  const av = document.getElementById("pcAvatar");
+  if (av) { const col = document.getElementById("sagaPlayerColor")?.value || players[0]?.color; if (col) { av.style.background = col; av.style.boxShadow = `0 0 12px ${col}`; } }
+  const start = document.getElementById("startGameBtn");
+  if (start) start.textContent = mode === "saga"
+    ? (saved > 0 && saved < SAGA_LEVELS.length ? `▶ CONTINUE · LEVEL ${saved + 1}` : "▶ PLAY SAGA")
+    : mode === "timeAttack" ? "▶ START TIME ATTACK" : "▶ START GAME";
+}
+
 function updateMenuHints() {
+  updateMenuCards();
+  updateResumeCard();
   // Win streak display
   const ws = getCounters().winStreak || 0;
   const wsEl = document.getElementById('winStreakMenu');
@@ -840,6 +1079,7 @@ const SKINS = [
 const RANK_NAMES = ["Rookie","Soldier","Veteran","Pro","Elite","Master","Legend"];
 
 function applySkin(skinId) {
+  if (!canUseOrbSkin(skinId)) { openPaywall("skin", skinId); return; }
   document.body.classList.remove("skin-fire", "skin-ice", "skin-electric");
   if (skinId && skinId !== "default") document.body.classList.add(skinId);
   saveSkin(skinId);
@@ -850,39 +1090,32 @@ function renderSkinSelector() {
   const container = document.getElementById("skinSelector");
   if (!container) return;
   const currentSkin = getSavedSkin();
-  const rankIdx = getXPInfo().rankIdx;
   const coins = getCoins();
+  const prem = isPremium();
   container.innerHTML = "";
   SKINS.forEach(s => {
-    const rankLocked = rankIdx < s.minRank;
-    const canAfford = s.coinPrice === 0 || coins >= s.coinPrice;
+    const owned = s.coinPrice === 0 || prem || getOwnedSkins().includes(s.id);
+    const canAfford = coins >= s.coinPrice;
     const isActive = s.id === currentSkin;
     const btn = document.createElement("button");
-
+    btn.type = "button";
     if (isActive) {
       btn.className = "skin-btn active";
-      btn.innerHTML = `<span class="skin-preview">${s.preview}</span>${s.label}<br><span style="font-size:0.6rem;color:#00ffcc">Equipped</span>`;
-      btn.addEventListener("click", () => applySkin(s.id));
-    } else if (!rankLocked) {
-      // Unlocked by rank — just equip
+      btn.innerHTML = `<span class="skin-preview">${s.preview}</span>${s.label}<br><span class="skin-tag on">Equipped</span>`;
+    } else if (owned) {
       btn.className = "skin-btn";
-      btn.innerHTML = `<span class="skin-preview">${s.preview}</span>${s.label}`;
-      btn.addEventListener("click", () => { applySkin(s.id); renderSkinSelector(); });
-    } else if (canAfford && s.coinPrice > 0) {
-      // Rank-locked but can buy with coins
+      btn.innerHTML = `<span class="skin-preview">${s.preview}</span>${s.label}${prem && s.coinPrice ? '<br><span class="skin-tag">★ Premium</span>' : ""}`;
+      btn.addEventListener("click", () => applySkin(s.id));
+    } else if (canAfford) {
       btn.className = "skin-btn coin-buy";
-      btn.innerHTML = `<span class="skin-preview">${s.preview}</span>${s.label}<br><span class="skin-buy-price">🪙 ${s.coinPrice} — Buy</span>`;
+      btn.innerHTML = `<span class="skin-preview">${s.preview}</span>${s.label}<br><span class="skin-buy-price">🪙 ${s.coinPrice} · Buy</span>`;
       btn.addEventListener("click", () => {
-        if (spendCoins(s.coinPrice)) {
-          applySkin(s.id);
-          updateCoinDisplay();
-          renderSkinSelector();
-        }
+        if (spendCoins(s.coinPrice)) { addOwnedSkin(s.id); applySkin(s.id); updateCoinDisplay(); }
       });
     } else {
-      // Locked, can't afford
       btn.className = "skin-btn locked";
-      btn.innerHTML = `<span class="skin-preview">${s.preview}</span>${s.label}<br><span style="font-size:0.6rem;color:#888">🪙 ${s.coinPrice} or ${RANK_NAMES[s.minRank]}</span>`;
+      btn.innerHTML = `<span class="skin-preview">${s.preview}</span>${s.label}<br><span class="skin-tag">🪙 ${s.coinPrice} or ★</span>`;
+      btn.addEventListener("click", () => openPaywall("skin", s.id));
     }
     container.appendChild(btn);
   });
@@ -899,6 +1132,7 @@ const BLAST_SKINS = [
 ];
 
 function applyBlastSkin(skinId) {
+  if (!canUseBlastSkin(skinId)) { openPaywall("skin", skinId); return; }
   saveBlastSkin(skinId);
   renderBlastSkinSelector();
 }
@@ -910,8 +1144,10 @@ function renderBlastSkinSelector() {
   container.innerHTML = "";
   BLAST_SKINS.forEach(s => {
     const btn = document.createElement("button");
-    btn.className = `skin-btn${s.id === current ? " active" : ""}`;
-    btn.innerHTML = `<span class="skin-preview">${s.preview}</span>${s.label}`;
+    btn.type = "button";
+    const locked = !canUseBlastSkin(s.id);
+    btn.className = `skin-btn${s.id === current ? " active" : ""}${locked ? " locked" : ""}`;
+    btn.innerHTML = `<span class="skin-preview">${s.preview}</span>${s.label}${locked ? '<br><span class="skin-tag">★ Premium</span>' : ""}`;
     btn.addEventListener("click", () => applyBlastSkin(s.id));
     container.appendChild(btn);
   });
@@ -928,16 +1164,43 @@ function spawnBlast(x, y, color) {
 }
 
 // ── RESPONSIVE CELL SIZE ──────────────────────────────────────────────────────
+// Fits the whole board inside the space left under the header/HUD, on ANY screen
+// (phones, tablets, foldables, desktop). Cells stay square and never overflow.
+let _fitRaf = 0;
 function setCellSize(c, r) {
-  const availW = window.innerWidth - 32;
-  const availH = window.innerHeight - 190;
-  const cellW = Math.max(22, Math.min(52, Math.floor((availW - 4 * c - 12) / c)));
-  const cellH = Math.max(22, Math.min(72, Math.floor((availH - 4 * r - 12) / r)));
-  // 6×6 stays square; 9×9/12×12 can be taller but capped at 1.25x to prevent pill shapes
-  const finalH = c <= 6 ? cellW : Math.min(cellH, Math.floor(cellW * 1.25));
-  document.documentElement.style.setProperty('--cell-w', finalH + 'px');
-  document.documentElement.style.setProperty('--cell-h', finalH + 'px');
+  const container = boardEl?.parentElement;
+  if (!container || !c || !r) return;
+  const cs = getComputedStyle(container);
+  const bs = getComputedStyle(boardEl);
+  const px = v => parseFloat(v) || 0;
+  const gap = px(bs.columnGap || bs.gap) || 4;
+  const rect = container.getBoundingClientRect();
+  const availW = rect.width  - px(cs.paddingLeft) - px(cs.paddingRight)
+               - px(bs.paddingLeft) - px(bs.paddingRight) - px(bs.borderLeftWidth) - px(bs.borderRightWidth);
+  const availH = rect.height - px(cs.paddingTop) - px(cs.paddingBottom)
+               - px(bs.paddingTop) - px(bs.paddingBottom) - px(bs.borderTopWidth) - px(bs.borderBottomWidth);
+  // Leave room for the theme (reference: Critical Mass keeps ~10% margins and big sky above/below)
+  const wire = document.body.classList.contains("board-wire");
+  const shortSide = Math.min(window.innerWidth, window.innerHeight);
+  const maxW = shortSide < 720 ? availW * 0.9 : Math.min(availW * 0.9, shortSide * 0.68);
+  const maxH = shortSide < 720 ? availH * 0.82 : Math.min(availH * 0.9, shortSide * 0.68);
+  let size = Math.floor(Math.min((maxW - gap * (c - 1)) / c, (maxH - gap * (r - 1)) / r));
+  if (!isFinite(size) || size <= 0) size = 40;          // not laid out yet — fallback, refit follows
+  size = Math.max(18, Math.min(wire ? 96 : 88, size));
+  document.documentElement.style.setProperty('--cell-w', size + 'px');
+  document.documentElement.style.setProperty('--cell-h', size + 'px');
 }
+function refitBoard() {
+  cancelAnimationFrame(_fitRaf);
+  _fitRaf = requestAnimationFrame(() => {
+    if (document.getElementById("gameView")?.classList.contains("active") && cols && rows) setCellSize(cols, rows);
+  });
+}
+// Re-fit whenever the board's container changes size (rotation, fold/unfold, split-screen, keyboard)
+if (typeof ResizeObserver !== "undefined" && boardEl?.parentElement) {
+  new ResizeObserver(refitBoard).observe(boardEl.parentElement);
+}
+window.addEventListener("orientationchange", () => setTimeout(refitBoard, 150));
 
 // ── SAGA LEVEL INTRO ──────────────────────────────────────────────────────────
 function showLevelIntro(level, levelIndex) {
@@ -988,6 +1251,8 @@ function closeTutorial() {
 
 function handleModeChange() {
   mode = modeSelect.value;
+  updateMenuCards();
+  document.getElementById("sagaPlayerColor")?.addEventListener("input", updateMenuCards, { once: true });
   if (timerContainer)
     timerContainer.style.display = mode === "timeAttack" ? "inline-block" : "none";
 
@@ -997,15 +1262,17 @@ function handleModeChange() {
 
   if (mode === "saga") {
     if (standardControls) standardControls.style.display = "none";
-    if (sagaControls) sagaControls.style.display = "block";
+    if (sagaControls) sagaControls.style.display = "flex";
     if (sagaMenuInfo) sagaMenuInfo.style.display = "none";
+    const pct = document.getElementById("playerConfigToggle"); if (pct) pct.style.display = "none";
     // Hide player config for saga (it manages its own players)
     const playerSection = document.querySelector(".menu-section:last-of-type");
     if (playerSection) playerSection.style.display = "none";
   } else {
-    if (standardControls) standardControls.style.display = "block";
+    if (standardControls) standardControls.style.display = "flex";
     if (sagaControls) sagaControls.style.display = "none";
     if (sagaMenuInfo) sagaMenuInfo.style.display = "none";
+    const pct = document.getElementById("playerConfigToggle"); if (pct) pct.style.display = "";
     // Show & render player config
     const playerSection = document.querySelector(".menu-section:last-of-type");
     if (playerSection) playerSection.style.display = "";
@@ -1015,6 +1282,7 @@ function handleModeChange() {
 
 function resetGame() {
   closeModal();
+  localStorage.removeItem(SAVE_KEY);
 
   // Hide saga objective when not in saga mode
   const sagaObj = document.getElementById("sagaObjective");
@@ -1034,6 +1302,8 @@ function resetGame() {
   const [c, r] = gridSelect.value.split("x").map(Number);
   cols = c;
   rows = r;
+  levelTimer = trackTimer();
+  track("match_start", { mode, grid: gridSelect.value, players: players.length, ai_diff: playerTypes.find(p => p?.type === "ai")?.difficulty || null });
   setCellSize(cols, rows);
   current = 0;
   playing = true;
@@ -1041,6 +1311,22 @@ function resetGame() {
   firstMove = players.map(() => false);
   history = [];
   movesMade = 0;
+  playerMoves = 0;
+
+  // Start fresh replay recording
+  if (!isReplaying) {
+    const gridLabel = `${cols}×${rows}`;
+    replayRecord = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      mode,
+      rows, cols, gridLabel,
+      players: players.map(p => ({ name: p.name, color: p.color })),
+      moves: [],
+      winner: -1,
+      winnerName: ''
+    };
+  }
 
   board = Array.from({ length: rows }, () =>
     Array.from({ length: cols }, () => ({
@@ -1050,17 +1336,7 @@ function resetGame() {
     }))
   );
 
-  boardEl.innerHTML = "";
-  boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell-w))`;
-
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      const cell = document.createElement("button");
-      cell.className = "cell";
-      cell.addEventListener("click", () => handleMove(x, y));
-      boardEl.appendChild(cell);
-    }
-  }
+  buildBoardDOM();
 
   lastMove = null;
   hintsRemaining = 1000; // TODO: set to 3 before release
@@ -1068,6 +1344,7 @@ function resetGame() {
   updateStatus();
   updateScores();
   paintAll();
+  refitBoard();
   showTutorial();
   if (mode === "timeAttack") {
     timeLeft = timeLimit;
@@ -1080,35 +1357,42 @@ function resetGame() {
 function initSagaLevel(level) {
   rows = level.rows;
   cols = level.cols;
+  levelTimer = trackTimer();
+  track("level_start", { level: sagaCurrentLevel + 1, level_id: level.id, boss: !!level.isBoss, daily: isDailyMode, fails: sagaConsecutiveFails });
   setCellSize(cols, rows);
   current = 0;
   playing = true;
   movesMade = 0;
+  playerMoves = 0;
   history = [];
   lastMove = null;
   hintsRemaining = 1000; // TODO: set to 3 before release
   hintsUsed = 0;
+  turnsSinceHint = 0;
+  lastNudgeTurn = -99;
 
   const aiDiff = document.getElementById("sagaAiDifficultySelect")?.value || "hard";
   const sagaMode = document.getElementById("sagaPlayerCountSelect")?.value || "ai";
   const playerCount = sagaMode === "3" ? 3 : 2;
 
+  const playerColor = document.getElementById("sagaPlayerColor")?.value || "#00ffcc";
+
   if (sagaMode === "2") {
     players = [
-      { name: "Player 1", color: "#00ffcc" },
+      { name: "Player 1", color: playerColor },
       { name: "Player 2", color: "#ff4757" }
     ];
     playerTypes = [{ type: "human" }, { type: "human" }];
   } else if (sagaMode === "3") {
     players = [
-      { name: "Player 1", color: "#00ffcc" },
+      { name: "Player 1", color: playerColor },
       { name: "Player 2", color: "#ff4757" },
       { name: "Player 3", color: "#ffd700" }
     ];
     playerTypes = [{ type: "human" }, { type: "human" }, { type: "human" }];
   } else {
     players = [
-      { name: "You", color: "#00ffcc" },
+      { name: "You", color: playerColor },
       { name: "Enemy", color: "#ff4757" }
     ];
     playerTypes = [{ type: "human" }, { type: "ai", difficulty: aiDiff }];
@@ -1132,22 +1416,13 @@ function initSagaLevel(level) {
     firstMove[orb.player] = true; // mark as already placed (for elimination check)
   }
 
-  boardEl.innerHTML = "";
-  boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell-w))`;
-
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      const cell = document.createElement("button");
-      cell.className = "cell";
-      cell.addEventListener("click", () => handleMove(x, y));
-      boardEl.appendChild(cell);
-    }
-  }
+  buildBoardDOM();
 
   updateHintCount();
   updateScores();
   updateStatus();
   paintAll();
+  refitBoard();
 
   const sagaObj = document.getElementById("sagaObjective");
   if (sagaObj) {
@@ -1160,7 +1435,7 @@ function initSagaLevel(level) {
 
 function handleMove(x, y) {
   if (!playerTypes[current]) return;
-  if (!playing || playerTypes[current].type === "ai") return;
+  if (!playing || resolving || playerTypes[current].type === "ai") return;
   if (board[y][x].isBlocked) return;
   if (board[y][x].owner !== -1 && board[y][x].owner !== current) return;
   makeMove(x, y);
@@ -1171,26 +1446,138 @@ async function makeMove(x, y) {
   lastMove = { x, y };
 
   history.push(JSON.stringify({
-      board: board.map(r => r.map(c => ({...c}))), 
-      current, 
-      scores: [...scores] 
+      board: board.map(r => r.map(c => ({...c}))),
+      current,
+      scores: [...scores],
+      movesMade, playerMoves,
+      firstMove: [...firstMove],
+      lastMove
   }));
+
+  // Record move for replay (skip during replay playback)
+  if (replayRecord && !isReplaying) replayRecord.moves.push({ x, y });
 
   board[y][x].owner = current;
   board[y][x].count += 1;
   movesMade++;
+  if (current === 0 && playerTypes[0]?.type !== "ai") playerMoves++;
 
   drawCell(x, y, board, boardEl, cols, players, current);
-
-  await resolveReactions();
-
   firstMove[current] = true;
+
+  resolving = true;
+  try { await resolveReactions(); } finally { resolving = false; }
+
   updateScores();
 
   if (playing && !checkWin()) advanceTurn();
 }
 
-/* ⭐ FAST PHYSICS SYSTEM */
+// ── AUTOSAVE / RESUME ─────────────────────────────────────────────────────────
+// Every completed move snapshots the match so an app kill (phone call, low
+// memory, back button) never loses a game. The menu offers "Resume".
+const SAVE_KEY = "neon_match_v1";
+function saveMatch() {
+  if (!playing || isReplaying || !board.length) return;
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      v: 1, savedAt: Date.now(),
+      mode, sagaCurrentLevel, isDailyMode, gridValue: gridSelect?.value,
+      rows, cols, players, playerTypes, board, current, movesMade, playerMoves, firstMove, scores,
+      timeLeft, hintsUsed, hintsRemaining, lastMove, sagaConsecutiveFails,
+    }));
+  } catch (e) { reportError(e, { where: "saveMatch" }); }
+}
+function clearSavedMatch() { localStorage.removeItem(SAVE_KEY); updateResumeCard(); }
+function getSavedMatch() {
+  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); return s && s.v === 1 && s.board?.length ? s : null; } catch { return null; }
+}
+function buildBoardDOM() {
+  boardEl.innerHTML = "";
+  boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell-w))`;
+  for (let y = 0; y < rows; y++)
+    for (let x = 0; x < cols; x++) {
+      const cell = document.createElement("button");
+      cell.className = "cell";
+      bindCell(cell, x, y);
+      boardEl.appendChild(cell);
+    }
+}
+function updateResumeCard() {
+  const card = document.getElementById("resumeCard");
+  if (!card) return;
+  const s = getSavedMatch();
+  if (!s) { card.style.display = "none"; return; }
+  const what = s.mode === "saga" ? `Saga · Level ${s.sagaCurrentLevel + 1}` : s.mode === "timeAttack" ? `Time Attack · ${s.timeLeft}s left` : `Quick Match · ${s.cols}×${s.rows}`;
+  const ago = Math.max(1, Math.round((Date.now() - s.savedAt) / 60000));
+  document.getElementById("resumeTitle").textContent = what;
+  document.getElementById("resumeMeta").textContent = `${s.movesMade} moves · ${ago < 60 ? ago + " min" : Math.round(ago / 60) + " h"} ago`;
+  card.style.display = "";
+}
+function resumeMatch() {
+  const s = getSavedMatch();
+  if (!s) return;
+  track("match_resume", { mode: s.mode, moves: s.movesMade });
+  closeModal(); hideLevelComplete();
+  mode = s.mode;
+  if (modeSelect) { modeSelect.value = mode; }
+  document.querySelectorAll(".mode-card").forEach(c => c.classList.toggle("selected", c.dataset.mode === mode));
+  sagaCurrentLevel = s.sagaCurrentLevel; isDailyMode = !!s.isDailyMode; sagaConsecutiveFails = s.sagaConsecutiveFails || 0;
+  if (s.gridValue && gridSelect) gridSelect.value = s.gridValue;
+  rows = s.rows; cols = s.cols;
+  players = s.players; playerTypes = s.playerTypes;
+  board = s.board; current = s.current; movesMade = s.movesMade; playerMoves = s.playerMoves || 0;
+  firstMove = s.firstMove; scores = s.scores; timeLeft = s.timeLeft; hintsUsed = s.hintsUsed || 0; hintsRemaining = s.hintsRemaining ?? hintsRemaining;
+  lastMove = s.lastMove || null; history = []; replayRecord = null; playing = true; resolving = false;
+
+  document.getElementById("mainMenu").style.display = "none";
+  document.getElementById("gameView")?.classList.add("active");
+  const sagaObj = document.getElementById("sagaObjective");
+  if (sagaObj) { if (mode === "saga") { sagaObj.textContent = `⚡ LEVEL ${sagaCurrentLevel + 1}: ${SAGA_LEVELS[sagaCurrentLevel]?.name || ""}`; sagaObj.classList.add("active"); } else sagaObj.classList.remove("active"); }
+  const skip = document.getElementById("sagaSkipBtn"); if (skip) skip.style.display = mode === "saga" ? "block" : "none";
+  if (timerContainer) timerContainer.style.display = mode === "timeAttack" ? "inline-block" : "none";
+  buildBoardDOM();
+  setCellSize(cols, rows);
+  updateHintCount(); updateStatus(); updateScores(); paintAll(); highlightLastMove(); refitBoard();
+  if (mode === "timeAttack") { if (timeLeftSpan) timeLeftSpan.textContent = timeLeft; startTimer(); }
+  postInfoMsg("▶ Match resumed", "#00ffcc", 1800);
+  processTurn();
+}
+
+// ── CELL INPUT ────────────────────────────────────────────────────────────────
+// Instant feedback: the cell squeezes on pointerdown (no waiting for click), and
+// on touch the move fires on pointerdown itself — the board never scrolls
+// (touch-action: none) so there is nothing to wait for. Mouse keeps click.
+function bindCell(cell, x, y) {
+  let firedByTouch = false;
+  cell.addEventListener("pointerdown", e => {
+    cell.classList.add("press");
+    if (e.pointerType === "touch" || e.pointerType === "pen") {
+      firedByTouch = true;
+      if (canPlayCell(x, y)) { haptic("place"); handleMove(x, y); }
+      else haptic("error");
+    }
+  }, { passive: true });
+  const release = () => cell.classList.remove("press");
+  cell.addEventListener("pointerup", release, { passive: true });
+  cell.addEventListener("pointercancel", release, { passive: true });
+  cell.addEventListener("pointerleave", release, { passive: true });
+  cell.addEventListener("click", () => {
+    if (firedByTouch) { firedByTouch = false; return; }   // touch already handled it
+    handleMove(x, y);
+  });
+}
+function canPlayCell(x, y) {
+  if (!playerTypes[current] || !playing || resolving || playerTypes[current].type === "ai") return false;
+  const c = board[y]?.[x];
+  return !!c && !c.isBlocked && (c.owner === -1 || c.owner === current);
+}
+
+/* ⭐ FAST PHYSICS SYSTEM (mobile-tuned)
+ * Per wave: measure cell centres ONCE before touching the DOM (no layout thrash),
+ * mutate the board model, then redraw each dirty cell ONCE, play ONE explode sound,
+ * and spawn at most a handful of particle bursts. */
+const IS_TOUCH = matchMedia("(hover: none)").matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 async function resolveReactions() {
   const q = [];
 
@@ -1209,6 +1596,21 @@ async function resolveReactions() {
   let loops = 0;
   let waveCount = 0;
   let totalBlast = 0;
+  const color = players[current].color;
+  const MAX_BURSTS = IS_TOUCH ? 4 : 10;
+
+  // Cell centres don't move during a chain — measure lazily, once per cell.
+  const centres = new Map();
+  const centreOf = (x, y) => {
+    const k = y * cols + x;
+    let c = centres.get(k);
+    if (!c) {
+      const r = boardEl.children[k].getBoundingClientRect();
+      c = [r.left + r.width / 2, r.top + r.height / 2];
+      centres.set(k, c);
+    }
+    return c;
+  };
 
   // Cap at 400 iterations — 400 × 8ms worst case = 3.2s max
   while (q.length && loops++ < 400) {
@@ -1216,67 +1618,63 @@ async function resolveReactions() {
     updateScores();
 
     // Early exit: if only one player has orbs the game is decided — skip the rest of the animation
-    if (movesMade >= players.length && players.filter((_, i) => scores[i] > 0).length <= 1) break;
+    if (aliveIndices().length <= 1) break;
 
     if (document.body.classList.contains("theme-matrix")) triggerMatrixFlash();
-    if (localMagmaSettings.heatActive) triggerHeat();
+    if (localMagmaSettings.heatActive && !IS_TOUCH) triggerHeat();
 
     const wave = [...new Set(q.map(([x, y]) => `${x},${y}`))]
-      .map(s => s.split(",").map(Number));
+      .map(s => s.split(",").map(Number))
+      .filter(([x, y]) => board[y][x].count >= capacity(x, y, rows, cols));
 
     totalBlast += wave.length;
     q.length = 0;
+    if (!wave.length) { findExplosions(); continue; }
 
+    // 1) READ phase — measure before any DOM write
+    const showFX = wave.length <= 10 || waveCount % 3 === 0;
+    const step = Math.max(1, Math.ceil(wave.length / MAX_BURSTS));
+    const bursts = showFX ? wave.filter((_, i) => i % step === 0).map(([x, y]) => centreOf(x, y)) : [];
+
+    // 2) MODEL phase — apply every explosion in the wave
+    const dirty = new Set();
     for (const [x, y] of wave) {
       const cap = capacity(x, y, rows, cols);
       const cell = board[y][x];
-
-      if (cell.count < cap) continue;
-
-      try {
-        const idx = y * cols + x;
-        const cellEl = boardEl.children[idx];
-        const r = cellEl.getBoundingClientRect();
-
-        // Throttle VFX for huge waves — MEGA BLAST already covers the visual impact
-        if (wave.length <= 10 || waveCount % 3 === 0) {
-          spawnBlast(r.left + r.width / 2, r.top + r.height / 2, players[current].color);
-        }
-
-        // Subtle pop effect (not the giant scale from before)
-        cellEl.style.transform = "scale(1.1)";
-        setTimeout(() => { cellEl.style.transform = ""; }, 100);
-
-      } catch (e) {
-        if (wave.length <= 10 || waveCount % 3 === 0) spawnBlast(x, y, players[current].color);
-      }
-
       cell.count -= cap;
       if (cell.count === 0) cell.owner = -1;
-
-      playSound("explode");
-      drawCell(x, y, board, boardEl, cols, players, current);
-
+      dirty.add(y * cols + x);
       for (const [nx, ny] of neighbors(x, y, rows, cols, board)) {
         board[ny][nx].owner = current;
         board[ny][nx].count += 1;
-        drawCell(nx, ny, board, boardEl, cols, players, current);
+        dirty.add(ny * cols + nx);
       }
     }
+
+    // 3) WRITE phase — each dirty cell drawn once; pop only the exploders
+    for (const k of dirty) drawCell(k % cols, Math.floor(k / cols), board, boardEl, cols, players, current);
+    for (const [x, y] of wave) {
+      const el = boardEl.children[y * cols + x];
+      if (el) el.classList.add("pop");
+    }
+    for (const [bx, by] of bursts) spawnBlast(bx, by, color);
+    playSound("explode");                       // throttled inside sound.js
+    haptic("explode", Math.min(1, wave.length / 6));
 
     findExplosions();
 
     // Adaptive delay: small chains get smooth 50ms, huge chains resolve fast
     const waveDelay = loops < 25 ? 50 : loops < 60 ? 20 : 8;
     await sleep(waveDelay);
+    for (const [x, y] of wave) boardEl.children[y * cols + x]?.classList.remove("pop");
   }
 
-  if (waveCount >= 3) showComboFlash(waveCount);
+  if (waveCount >= 3) showChainBadge(waveCount);
   if (totalBlast >= 13) {
     const br = boardEl.getBoundingClientRect();
-    spawnMegaBlast(br.left + br.width / 2, br.top + br.height / 2, players[current].color);
-  }
-  showBlastMilestone(totalBlast);
+    spawnMegaBlast(br.left + br.width / 2, br.top + br.height / 2, color);
+    haptic("mega");
+  } else if (waveCount >= 5) haptic("chain");
 }
 
 function updateScores() {
@@ -1289,18 +1687,23 @@ function updateScores() {
         scores[board[y][x].owner] += board[y][x].count;
         total += board[y][x].count;
       }
-      
+
   if (territoryMeter && total > 0) {
-      territoryMeter.innerHTML = '';
-      players.forEach((p, i) => {
-          if (scores[i] > 0) {
-              const b = document.createElement('div');
-              b.className = 'meter-bar';
-              b.style.width = (scores[i]/total)*100 + '%';
-              b.style.backgroundColor = p.color;
-              territoryMeter.appendChild(b);
-          }
+    // Reuse one bar per player (creating/destroying nodes every wave is wasteful)
+    if (territoryMeter.children.length !== players.length) {
+      territoryMeter.innerHTML = "";
+      players.forEach(p => {
+        const b = document.createElement("div");
+        b.className = "meter-bar";
+        b.style.backgroundColor = p.color;
+        territoryMeter.appendChild(b);
       });
+    }
+    players.forEach((p, i) => {
+      const b = territoryMeter.children[i];
+      b.style.width = (scores[i] / total) * 100 + "%";
+      b.style.backgroundColor = p.color;
+    });
   }
 }
 
@@ -1324,12 +1727,18 @@ function updateStatus() {
   }
 }
 
+// A player is alive if they have orbs, or haven't placed their first orb yet
+// (preset saga orbs count as placed, so a wiped-out enemy is dead from move 1).
+function aliveIndices() {
+  return players.map((_, i) => i).filter(i => scores[i] > 0 || !firstMove[i]);
+}
+
 function checkWin() {
   if (mode === "saga") {
-    const aliveIndices = players.map((_, i) => i).filter(i => scores[i] > 0);
-    if (movesMade >= players.length && aliveIndices.length === 1) {
+    const alive = aliveIndices();
+    if (alive.length === 1) {
       playing = false;
-      if (aliveIndices[0] === 0) {
+      if (alive[0] === 0) {
         const saved = parseInt(localStorage.getItem("sagaProgress") || "0", 10);
         if (sagaCurrentLevel + 1 > saved)
           localStorage.setItem("sagaProgress", (sagaCurrentLevel + 1).toString());
@@ -1342,9 +1751,9 @@ function checkWin() {
     return false;
   }
 
-  const aliveIndices = players.map((_, i) => i).filter(i => scores[i] > 0);
+  const alive = aliveIndices();
 
-  if (movesMade >= players.length && aliveIndices.length === 1) {
+  if (alive.length === 1) {
     playing = false;
     stopTimer();
 
@@ -1353,7 +1762,7 @@ function checkWin() {
     const aiDiff = aiPlayer?.difficulty || null;
 
     // Record game end and get updated stats
-    const stats = recordGameEnd(aliveIndices[0], aiDiff);
+    const stats = recordGameEnd(alive[0], aiDiff);
     const totalGames = stats.matches;
 
     // Games played milestones (win or lose)
@@ -1361,7 +1770,7 @@ function checkWin() {
     else if (totalGames >= 50) unlockAchievement("games_50", "Regular Player", "Played 50 games");
     else if (totalGames >= 10) unlockAchievement("games_10", "Getting Started", "Played 10 games");
 
-    if (aliveIndices[0] === 0) {
+    if (alive[0] === 0) {
       // Core win achievements
       unlockAchievement("first_win", "First Victory!", "Won your very first game");
 
@@ -1410,8 +1819,30 @@ function checkWin() {
       setCounter('winStreak', 0);
     }
 
-    const winnerName = players[aliveIndices[0]].name;
-    showGameOver("Victory!", `${winnerName} has secured the system!`, true, aliveIndices[0] === 0);
+    const winnerName = players[alive[0]].name;
+
+    // Save replay
+    if (replayRecord && !isReplaying) {
+      replayRecord.winner = alive[0];
+      replayRecord.winnerName = winnerName;
+      saveReplay(replayRecord);
+      replayRecord = null;
+    }
+
+    // Show leaderboard submit button if player won vs AI
+    const playerWon = alive[0] === 0;
+    const hasAI = playerTypes.some((pt, i) => i !== 0 && pt?.type === 'ai');
+    if (playerWon && hasAI && LEADERBOARD_ENABLED) {
+      const submitBtn = document.getElementById("modalLeaderboardBtn");
+      if (submitBtn) {
+        const aiDiff = playerTypes.find((pt, i) => i !== 0 && pt?.type === 'ai')?.difficulty || null;
+        const gridVal = `${cols}x${rows}`;
+        submitBtn.style.display = "inline-flex";
+        submitBtn.onclick = () => promptAndSubmitScore(players[0].name, movesMade, mode, gridVal, aiDiff);
+      }
+    }
+
+    showGameOver("Victory!", `${winnerName} has secured the system!`, true, playerWon);
     return true;
   }
   return false;
@@ -1425,8 +1856,85 @@ function advanceTurn() {
   } while (firstMove[current] && scores[current] === 0 && loops < players.length);
 
   updateStatus();
-  paintAll(true);
+  refreshTurnVisuals();
+  saveMatch();                                  // snapshot AFTER the turn has passed
+
+  if (isReplaying) {
+    replayStep();
+    return;
+  }
+  if (current === 0) { turnsSinceHint++; maybeNudgeHint(); }
   if (playing) processTurn();
+}
+
+// Cheap per-turn visuals: no cell re-render (that was 144 innerHTML rebuilds on 12×12).
+// Colour sweep across the board in the new player's colour + badge pop; on desktop,
+// pulse the current player's cells by toggling a class only.
+function refreshTurnVisuals() {
+  const color = players[current]?.color || "#47f2ff";
+  for (const el of boardEl.querySelectorAll(".last-move")) el.classList.remove("last-move");
+  highlightLastMove();
+  if (!IS_TOUCH) {
+    for (let y = 0; y < rows; y++)
+      for (let x = 0; x < cols; x++)
+        boardEl.children[y * cols + x]?.classList.toggle("pulse", board[y][x].owner === current);
+  }
+  const sweepEl = document.body.classList.contains("board-wire") ? boardEl.parentElement : boardEl;
+  sweepEl.style.setProperty("--sweep", color);
+  sweepEl.classList.remove("turn-sweep");
+  void sweepEl.offsetWidth;                      // restart the animation
+  sweepEl.classList.add("turn-sweep");
+  if (turnBadge) {
+    turnBadge.classList.remove("pop");
+    void turnBadge.offsetWidth;
+    turnBadge.classList.add("pop");
+  }
+}
+
+// ── ADAPTIVE AI (saga only) ───────────────────────────────────────────────────
+// A hidden "mercy" score (0–100) rises while the player struggles and falls while
+// they dominate. It is converted to an AI skill in [0.15, 1]: at 1 the AI always
+// plays its best move; below that it makes *plausible* slips (2nd/3rd best move,
+// see chooseBySkill in ai.js) — never obviously random blunders.
+function computeMercy() {
+  if (mode !== "saga") return 0;
+  let m = 0;
+  m += Math.min(50, hintsUsed * 12);               // asked for help → soften
+  m += Math.min(30, sagaConsecutiveFails * 15);    // lost this level before → soften
+  const total = scores.reduce((a, b) => a + b, 0);
+  if (total > 0 && movesMade >= players.length) {
+    const share = scores[0] / total;               // player's orb share
+    if (share < 0.2) m += 25;
+    else if (share < 0.35) m += 15;
+    else if (share > 0.6) m -= 20;                 // cruising → AI plays sharp
+  }
+  const level = SAGA_LEVELS[sagaCurrentLevel];
+  if (level?.isBoss) m -= 15;                      // bosses stay meaner
+  return Math.max(0, Math.min(100, m));
+}
+
+function currentAISkill() {
+  const mercy = computeMercy();
+  const skill = 1 - (mercy / 100) * 0.85;          // 100 mercy → 0.15 skill
+  if (mercyDebug || window.mercyDebug) console.log(`[adaptive] mercy=${mercy} skill=${skill.toFixed(2)} hints=${hintsUsed} fails=${sagaConsecutiveFails}`);
+  return skill;
+}
+
+// Nudge the player toward the hint button when they're behind and haven't used one in a while.
+function maybeNudgeHint() {
+  if (mode !== "saga" || current !== 0 || !playing) return;
+  const total = scores.reduce((a, b) => a + b, 0);
+  if (total === 0 || movesMade < players.length * 2) return;
+  const share = scores[0] / total;
+  if (share >= 0.4) return;
+  if (turnsSinceHint < 3 || movesMade - lastNudgeTurn < 6) return;
+  lastNudgeTurn = movesMade;
+  const btn = document.getElementById("hintBtn");
+  if (btn) {
+    btn.classList.add("hint-nudge");
+    setTimeout(() => btn.classList.remove("hint-nudge"), 4000);
+  }
+  postInfoMsg(share < 0.25 ? "⚠️ Enemy is closing in — tap 💡 for a hint" : "💡 Losing ground? A hint can turn it around", "#88aaff", 3000);
 }
 
 function processTurn() {
@@ -1441,35 +1949,16 @@ function processTurn() {
   aiTimeout = setTimeout(() => {
     const diff = playerTypes[current].difficulty || "hard";
 
-    // Adaptive difficulty: more hints player used = higher chance AI picks a random (blind) move
-    if (mode === "saga") {
-      let blindChance = 0;
-      if (hintsUsed >= 11) blindChance = 0.85;
-      else if (hintsUsed >= 9) blindChance = 0.70;
-      else if (hintsUsed >= 6) blindChance = 0.50;
-      else if (hintsUsed >= 3) blindChance = 0.25;
-
-      if (blindChance > 0 && Math.random() < blindChance) {
-        const validMoves = [];
-        for (let y = 0; y < rows; y++)
-          for (let x = 0; x < cols; x++)
-            if (!board[y][x].isBlocked && (board[y][x].owner === -1 || board[y][x].owner === current))
-              validMoves.push({ x, y });
-        if (validMoves.length) {
-          const blindMove = validMoves[Math.floor(Math.random() * validMoves.length)];
-          makeMove(blindMove.x, blindMove.y);
-          return;
-        }
-      }
-    }
+    // Adaptive difficulty (saga): skill < 1 makes the AI slip on purpose, subtly
+    const skill = mode === "saga" ? currentAISkill() : 1;
 
     if (aiWorker) {
       // Off-thread: worker computes move on a separate CPU core, UI stays smooth
       const id = ++aiMoveId;
-      aiWorker.postMessage({ board, current, difficulty: diff, rows, cols, playerCount: players.length, id });
+      aiWorker.postMessage({ board, current, difficulty: diff, rows, cols, playerCount: players.length, skill, id });
     } else {
       // Fallback: compute on main thread (older browsers)
-      const move = makeAIMove(board, current, diff, rows, cols, players.length);
+      const move = makeAIMove(board, current, diff, rows, cols, players.length, skill);
       if (move) makeMove(move.x, move.y);
     }
   }, aiDelay);
@@ -1494,11 +1983,14 @@ function useHint() {
     document.getElementById("adModal").style.display = "flex";
     return;
   }
-  const best = getProfessionalHint(board, current, rows, cols);
+  const best = getProfessionalHint(board, current, rows, cols, players.length);
   if (!best) return;
 
   hintsRemaining--;
   hintsUsed++;
+  turnsSinceHint = 0;
+  track("hint_used", { mode, level: mode === "saga" ? sagaCurrentLevel + 1 : null, hints_used: hintsUsed, moves: movesMade, mercy: computeMercy() });
+  document.getElementById("hintBtn")?.classList.remove("hint-nudge");
   updateHintCount();
 
   const reason = getHintReason(best);
@@ -1510,39 +2002,52 @@ function useHint() {
     cellEl.title = "";
   }, 3000);
 
-  const hudMsg = document.getElementById("hudMessage");
-  if (hudMsg) {
-    hudMsg.textContent = `💡 Hint: This move ${reason}`;
-    hudMsg.classList.add("active");
-    setTimeout(() => {
-      hudMsg.textContent = "";
-      hudMsg.classList.remove("active");
-    }, 3500);
-  }
+  postInfoMsg(`💡 Hint\nThis move ${reason}`, "#88aaff", 3500);
 }
 
 function playFakeAd() {
+  track("rewarded_ad_complete", { placement: "hints" });
   hintsRemaining += 3;
   updateHintCount();
   document.getElementById("adModal").style.display = "none";
 }
 
 function undoMove() {
-    if (!history.length || !playing) return;
-    const prev = JSON.parse(history.pop());
+  if (!history.length || !playing || resolving || isReplaying) return;
+
+  // Cancel any AI move that is being computed / scheduled for the current position
+  clearTimeout(aiTimeout);
+  aiMoveId++;
+
+  const restore = snap => {
+    const prev = JSON.parse(snap);
     board = prev.board;
     current = prev.current;
     scores = prev.scores;
-    lastMove = null;
-    paintAll();
-    updateStatus();
-    updateScores();
+    movesMade = prev.movesMade ?? Math.max(0, movesMade - 1);
+    playerMoves = prev.playerMoves ?? playerMoves;
+    if (prev.firstMove) firstMove = prev.firstMove;
+    lastMove = prev.lastMove ?? null;
+    if (replayRecord && !isReplaying && replayRecord.moves.length) replayRecord.moves.pop();
+  };
+
+  restore(history.pop());
+  // Against the AI, one undo should hand the turn back to the human: rewind the AI's ply too
+  let guard = 0;
+  while (history.length && playerTypes[current]?.type === "ai" && guard++ < players.length) restore(history.pop());
+
+  paintAll();
+  updateStatus();
+  updateScores();
+  // If (in a multi-AI lobby) it is still an AI's turn, let it think again
+  if (playerTypes[current]?.type === "ai") processTurn();
 }
 
 function startTimer() {
   stopTimer();
   timer = setInterval(() => {
     if (!playing) { stopTimer(); return; }
+    if (resolving || playerTypes[current]?.type === "ai") return;   // clock only runs on a human's turn
     timeLeft--;
     if (timeLeftSpan) timeLeftSpan.textContent = timeLeft;
     if (timeLeft <= 0) {
@@ -1555,6 +2060,7 @@ function startTimer() {
         grantXP(50);
       }
       const winnerName = players[bestIdx]?.name || "Unknown";
+      track("time_attack_timeout", { winner: bestIdx });
       showGameOver("Time's Up!", `${winnerName} wins with the most orbs!`, true, bestIdx === 0);
     }
   }, 1000);
@@ -1656,7 +2162,10 @@ function showAchievementReveal(callback) {
 }
 
 function showGameOver(t, m, w, playerWon = false) {
+  track(playerWon ? "match_win" : "match_lose", { mode, grid: `${cols}x${rows}`, moves: movesMade, seconds: levelTimer ? Math.round(levelTimer() / 1000) : null, players: players.length });
+  clearSavedMatch();
   playSound("win");
+  haptic(playerWon ? "win" : "lose");
   startCelebration();
   const hasAI = playerTypes && playerTypes.some(pt => pt && pt.type === "ai");
   if (hasAI && playerWon) {
@@ -1673,16 +2182,20 @@ function showGameOver(t, m, w, playerWon = false) {
 }
 
 function showSagaWin() {
-  sagaConsecutiveFails = 0;
+  clearSavedMatch();
   playSound("win");
+  haptic("win");
   startCelebration();
 
   const level = SAGA_LEVELS[sagaCurrentLevel];
 
   // Calculate stars based on moves
+  // Stars count only YOUR moves (the AI's moves used to count against you).
+  // A level can override with `par` (moves for 3★); 2★ is up to 1.6× par.
   const playable = level.rows * level.cols - level.blockedCells.length;
-  const stars = movesMade <= Math.floor(playable * 0.3) ? 3
-              : movesMade <= Math.floor(playable * 0.5) ? 2 : 1;
+  const par = level.par || Math.max(6, Math.round(playable * 0.3));
+  const stars = playerMoves <= par ? 3
+              : playerMoves <= Math.round(par * 1.6) ? 2 : 1;
   const prevBest = getLevelStars(level.id);
   const newBest = saveLevelStars(level.id, stars);
   const starsRow = "⭐".repeat(stars) + "☆".repeat(3 - stars);
@@ -1715,12 +2228,9 @@ function showSagaWin() {
   // XP: base + star bonus
   grantXP(75 + (stars === 3 ? 50 : stars === 2 ? 25 : 0));
 
-  modalTitle.textContent = `✓ Level ${sagaCurrentLevel + 1} Complete!`;
-  modalBody.innerHTML = `
-    <strong>${level.name}</strong><br>Enemy eliminated!
-    <div style="font-size:1.5rem;margin:8px 0">${starsRow}</div>
-    <div style="font-size:0.8rem;color:#aaa">${movesMade} moves${improved}</div>
-  `;
+  const xpGain = 75 + (stars === 3 ? 50 : stars === 2 ? 25 : 0);
+  let dailyLine = "";
+  const o_daily = isDailyMode;
 
   // Daily challenge completion
   if (isDailyMode) {
@@ -1738,21 +2248,89 @@ function showSagaWin() {
       unlockAchievement("streak_14", "Fortnight", "14-day daily challenge streak");
     if (streak >= 30)
       unlockAchievement("streak_30", "Monthly Master", "30-day daily challenge streak");
-    modalBody.innerHTML += `<div style="color:#ffd700;margin-top:8px;font-weight:700">🔥 ${streak} day streak! +100 XP</div>`;
+    dailyLine = `🔥 ${streak} day streak! +100 XP`;
     isDailyMode = false;
     updateDailyUI();
   }
 
-  const nextBtn = document.getElementById("modalNextBtn");
-  if (nextBtn)
-    nextBtn.style.display = sagaCurrentLevel < SAGA_LEVELS.length - 1 ? "inline-block" : "none";
-  if (modalSkipBtn) modalSkipBtn.style.display = "none";
-  if (modalReplayBtn) modalReplayBtn.textContent = "Retry";
-  gameModal.style.display = "flex";
+  track("level_win", { level: sagaCurrentLevel + 1, stars, moves: playerMoves, par, hints: hintsUsed, fails_before: sagaConsecutiveFails, seconds: levelTimer ? Math.round(levelTimer() / 1000) : null, daily: !!o_daily });
+  sagaConsecutiveFails = 0;
+  showLevelComplete({
+    levelNum: sagaCurrentLevel + 1,
+    name: level.name,
+    stars, par, moves: playerMoves, improved: newBest > prevBest && prevBest > 0,
+    xpGain, dailyLine,
+    hasNext: sagaCurrentLevel < SAGA_LEVELS.length - 1,
+  });
+}
+
+// ── LEVEL COMPLETE SEQUENCE ───────────────────────────────────────────────────
+// stars fly in one by one → XP counts up → buttons slide in. Skippable by tapping.
+function showLevelComplete(o) {
+  const ov = document.getElementById("levelCompleteOverlay");
+  if (!ov) { gameModal.style.display = "flex"; return; }
+  const $$ = id => document.getElementById(id);
+  $$("lcLevel").textContent = `LEVEL ${o.levelNum}`;
+  $$("lcName").textContent = o.name;
+  $$("lcMoves").textContent = `${o.moves} moves · par ${o.par}${o.improved ? " · 🆕 new best" : ""}`;
+  $$("lcXP").textContent = "+0 XP";
+  $$("lcDaily").textContent = o.dailyLine || "";
+  $$("lcDaily").style.display = o.dailyLine ? "" : "none";
+  $$("lcNext").style.display = o.hasNext ? "" : "none";
+  const starEls = [...ov.querySelectorAll(".lc-star")];
+  starEls.forEach(s => s.classList.remove("on", "in"));
+  ov.classList.remove("show-actions");
+  ov.style.display = "flex";
+  requestAnimationFrame(() => ov.classList.add("visible"));
+
+  let t = 500, done = false;
+  const timers = [];
+  const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+  for (let i = 0; i < 3; i++) {
+    const el = starEls[i], lit = i < o.stars;
+    later(() => {
+      el.classList.add("in");
+      if (lit) { el.classList.add("on"); playSound("click"); haptic("star"); }
+    }, t);
+    t += lit ? 380 : 220;
+  }
+  // XP count-up
+  later(() => {
+    const start = performance.now(), dur = 700;
+    const tick = now => {
+      const k = Math.min(1, (now - start) / dur);
+      const v = Math.round(o.xpGain * (1 - Math.pow(1 - k, 3)));
+      $$("lcXP").textContent = `+${v} XP`;
+      if (k < 1 && !done) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, t);
+  t += 800;
+  later(() => ov.classList.add("show-actions"), t);
+
+  const finish = () => {                       // tap anywhere → skip straight to the end state
+    if (done) return;
+    done = true;
+    timers.forEach(clearTimeout);
+    starEls.forEach((el, i) => { el.classList.add("in"); if (i < o.stars) el.classList.add("on"); });
+    $$("lcXP").textContent = `+${o.xpGain} XP`;
+    ov.classList.add("show-actions");
+  };
+  ov.onclick = e => { if (!e.target.closest("button")) finish(); };
+  later(() => { done = true; }, t + 50);
+}
+function hideLevelComplete() {
+  const ov = document.getElementById("levelCompleteOverlay");
+  if (!ov) return;
+  ov.classList.remove("visible", "show-actions");
+  ov.style.display = "none";
 }
 
 function showSagaFail() {
   sagaConsecutiveFails++;
+  clearSavedMatch();
+  track("level_fail", { level: sagaCurrentLevel + 1, moves: playerMoves, hints: hintsUsed, fails: sagaConsecutiveFails, seconds: levelTimer ? Math.round(levelTimer() / 1000) : null, mercy: computeMercy() });
+  haptic("lose");
   modalTitle.textContent = "Defeated!";
   modalBody.innerHTML = `The enemy eliminated all your orbs!<br>Try again?`;
   if (modalReplayBtn) modalReplayBtn.textContent = "Try Again";
@@ -1763,6 +2341,7 @@ function showSagaFail() {
 }
 
 function skipSagaLevel() {
+  track("level_skip", { level: sagaCurrentLevel + 1, fails: sagaConsecutiveFails });
   sagaConsecutiveFails = 0;
   const saved = parseInt(localStorage.getItem("sagaProgress") || "0", 10);
   if (sagaCurrentLevel + 1 > saved)
@@ -1854,5 +2433,197 @@ function showInterstitialAd(callback) {
     callback();
   };
 }
+
+// ── LEADERBOARD ───────────────────────────────────────────────────────────────
+
+async function promptAndSubmitScore(defaultName, score, gameMode, grid, aiDifficulty) {
+  const btn = document.getElementById("modalLeaderboardBtn");
+  const name = prompt("Enter your name for the leaderboard:", defaultName || "Player");
+  if (!name) return;
+  if (btn) { btn.textContent = "Submitting..."; btn.disabled = true; }
+  const result = await submitScore({ playerName: name.slice(0, 20), score, mode: gameMode, grid, aiDifficulty });
+  if (btn) {
+    btn.textContent = result.ok ? "✅ Submitted!" : "❌ Failed";
+    btn.disabled = true;
+  }
+}
+
+async function openLeaderboardModal() {
+  const modal = document.getElementById("leaderboardModal");
+  const body = document.getElementById("leaderboardBody");
+  const modeTab = document.getElementById("lbModeTab");
+  const gridFilter = document.getElementById("lbGridFilter");
+  if (!modal || !body) return;
+
+  const gameMode = modeTab?.value || "normal";
+  const grid = gridFilter?.value || "9x9";
+
+  body.innerHTML = '<p style="color:#666;text-align:center;padding:20px;">Loading...</p>';
+  modal.style.display = "flex";
+
+  const rows_data = await fetchLeaderboard({ mode: gameMode, grid });
+  body.innerHTML = "";
+
+  if (!rows_data.length) {
+    body.innerHTML = '<p style="color:#666;text-align:center;padding:20px;">No scores yet. Be the first!</p>';
+    return;
+  }
+
+  const table = document.createElement("table");
+  table.style.cssText = "width:100%;border-collapse:collapse;font-size:0.85rem;";
+  table.innerHTML = `<thead><tr style="color:#00ffcc;border-bottom:1px solid #333;">
+    <th style="padding:6px 4px;text-align:left;">#</th>
+    <th style="padding:6px 4px;text-align:left;">Name</th>
+    <th style="padding:6px 4px;text-align:right;">${gameMode === 'timeAttack' ? 'Time Left' : 'Moves'}</th>
+    <th style="padding:6px 4px;text-align:right;">Diff</th>
+  </tr></thead>`;
+  const tbody = document.createElement("tbody");
+  rows_data.forEach((row, i) => {
+    const tr = document.createElement("tr");
+    tr.style.borderBottom = "1px solid #1a1a1a";
+    const score = gameMode === 'timeAttack' ? (row.score / 1000).toFixed(1) + "s" : row.score;
+    tr.innerHTML = `<td style="padding:6px 4px;color:#666;">${i+1}</td>
+      <td style="padding:6px 4px;">${row.player_name}</td>
+      <td style="padding:6px 4px;text-align:right;color:#00ffcc;">${score}</td>
+      <td style="padding:6px 4px;text-align:right;color:#888;">${row.ai_difficulty || '-'}</td>`;
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  body.appendChild(table);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── REPLAY PLAYBACK ───────────────────────────────────────────────────────────
+
+function replayStep() {
+  if (!isReplaying || replayPaused) return;
+  if (replayIndex >= replayMoves.length) {
+    // Replay finished — show controls as done
+    updateReplayUI();
+    return;
+  }
+  clearTimeout(replayTimer);
+  replayTimer = setTimeout(() => {
+    if (!isReplaying || replayPaused) return;
+    const { x, y } = replayMoves[replayIndex++];
+    updateReplayUI();
+    makeMove(x, y);
+  }, replaySpeedMs);
+}
+
+function updateReplayUI() {
+  const counter = document.getElementById("replayCounter");
+  const playBtn = document.getElementById("replayPlayBtn");
+  if (counter) counter.textContent = `${replayIndex} / ${replayMoves.length}`;
+  if (playBtn) playBtn.textContent = replayPaused ? "▶" : "⏸";
+}
+
+function startReplayPlayback(replayData) {
+  isReplaying = true;
+  replayMoves = replayData.moves;
+  replayCurrentId = replayData.id;
+  replayIndex = 0;
+  replayPaused = false;
+  replaySpeedMs = 800;
+
+  // Override players + grid from replay data
+  players = replayData.players.map(p => ({ name: p.name, color: p.color }));
+  playerTypes = replayData.players.map(() => ({ type: 'human' })); // all human so AI doesn't fire
+  mode = replayData.mode || "normal";
+
+  const [c, r] = [replayData.cols, replayData.rows];
+  cols = c; rows = r;
+
+  // Switch to game view
+  document.getElementById("mainMenu").classList.remove("active");
+  document.getElementById("gameView").classList.add("active");
+  document.getElementById("replayControls").style.display = "flex";
+  document.querySelector(".game-header").style.display = "none";
+
+  // Re-init board without processing AI turn
+  setCellSize(cols, rows);
+  current = 0;
+  playing = true;
+  firstMove = players.map(() => false);
+  history = [];
+  movesMade = 0;
+  playerMoves = 0;
+  replayRecord = null;
+
+  board = Array.from({ length: rows }, () =>
+    Array.from({ length: cols }, () => ({ owner: -1, count: 0, isBlocked: false }))
+  );
+  boardEl.innerHTML = "";
+  boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell-w))`;
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const cell = document.createElement("button");
+      cell.className = "cell";
+      // no click handler — watch-only
+      boardEl.appendChild(cell);
+    }
+  }
+
+  updateStatus();
+  updateScores();
+  paintAll();
+  updateReplayUI();
+  replayStep();
+}
+
+function stopReplay() {
+  clearTimeout(replayTimer);
+  isReplaying = false;
+  replayPaused = false;
+  replayMoves = [];
+  replayIndex = 0;
+  document.getElementById("replayControls").style.display = "none";
+  document.querySelector(".game-header").style.display = "";
+  backToMenu();
+}
+
+function openReplaysModal() {
+  const modal = document.getElementById("replaysModal");
+  const list = document.getElementById("replaysList");
+  if (!modal || !list) return;
+  const replays = getReplays();
+  list.innerHTML = "";
+
+  if (replays.length === 0) {
+    list.innerHTML = '<p style="color:#666; text-align:center; padding:20px;">No replays saved yet.<br>Play a game to record one!</p>';
+  } else {
+    replays.forEach(r => {
+      const d = new Date(r.date);
+      const dateStr = d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const row = document.createElement("div");
+      row.className = "replay-row";
+      row.innerHTML = `
+        <div class="replay-info">
+          <span class="replay-winner" style="color:${r.players[r.winner]?.color || '#00ffcc'}">${r.winnerName || '?'} won</span>
+          <span class="replay-meta">${r.mode} · ${r.gridLabel} · ${r.moves.length} moves</span>
+          <span class="replay-date">${dateStr}</span>
+        </div>
+        <div class="replay-actions">
+          <button class="replay-play-btn modal-btn primary">▶ Play</button>
+          <button class="replay-del-btn modal-btn secondary">🗑</button>
+        </div>`;
+      row.querySelector(".replay-play-btn").addEventListener("click", () => {
+        modal.style.display = "none";
+        startReplayPlayback(r);
+      });
+      row.querySelector(".replay-del-btn").addEventListener("click", () => {
+        deleteReplay(r.id);
+        row.remove();
+        if (list.children.length === 0)
+          list.innerHTML = '<p style="color:#666; text-align:center; padding:20px;">No replays saved yet.</p>';
+      });
+      list.appendChild(row);
+    });
+  }
+  modal.style.display = "flex";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 init();
