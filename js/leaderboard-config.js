@@ -23,6 +23,6 @@
 // 4. Set LEADERBOARD_ENABLED to true
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
-export const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+export const SUPABASE_URL = 'https://fozykvhmtdcygfziisre.supabase.co';
+export const SUPABASE_ANON_KEY = 'sb_publishable_JkIeyi9xuqn_RM8RYHEE0g_pAlVmOCl';
 export const LEADERBOARD_ENABLED = false; // set to true after configuring above

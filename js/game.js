@@ -18,6 +18,8 @@ import { SAGA_LEVELS } from "./levels.js";
 import { haptic, hapticsEnabled, setHaptics, hapticsSupported } from "./haptics.js";
 import { track, reportError, timer as trackTimer } from "./analytics.js";
 import { GPUBoard } from "./renderer.js";
+// 🧪 VIRTUAL PVP · TESTING PHASE 1 — remove this import (and all online* hooks) at release
+import { initOnline, onlineActive, onlineMySlot, onlineSendMove, onlineLeave } from "./online.js";
 window.neonTrack = track;
 import { isPremium, onEntitlementChange, refreshEntitlement, purchasePremium, restorePurchases,
          getOfferings, isMockBilling, setMockPremium, getOwnedSkins, addOwnedSkin,
@@ -571,6 +573,9 @@ function startGame() {
 }
 
 function backToMenu() {
+  onlineLeave();                                 // 🧪 vpvp: no-op unless in a room
+  if (mode === "online") mode = "normal";
+  if (undoBtn) undoBtn.style.display = "";
   hideLevelComplete();
   playing = false;
   isDailyMode = false;
@@ -1305,7 +1310,7 @@ function resetGame() {
     return;
   }
 
-  const [c, r] = gridSelect.value.split("x").map(Number);
+  const [c, r] = mode === "online" ? [cols, rows] : gridSelect.value.split("x").map(Number);
   cols = c;
   rows = r;
   levelTimer = trackTimer();
@@ -1445,6 +1450,11 @@ function handleMove(x, y) {
   if (!playing || resolving || playerTypes[current].type === "ai") return;
   if (board[y][x].isBlocked) return;
   if (board[y][x].owner !== -1 && board[y][x].owner !== current) return;
+  if (onlineActive()) {                          // 🧪 vpvp: taps go to the room, moves apply from the channel
+    if (current !== onlineMySlot()) return;
+    onlineSendMove(x, y);
+    return;
+  }
   makeMove(x, y);
 }
 
@@ -1601,7 +1611,7 @@ function gfxBurstCap() {
 // memory, back button) never loses a game. The menu offers "Resume".
 const SAVE_KEY = "neon_match_v1";
 function saveMatch() {
-  if (!playing || isReplaying || !board.length) return;
+  if (!playing || isReplaying || !board.length || mode === "online") return;
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       v: 1, savedAt: Date.now(),
@@ -1700,6 +1710,7 @@ function bindCell(cell, x, y) {
 }
 function canPlayCell(x, y) {
   if (isReplaying) return false;                 // replays are watch-only
+  if (onlineActive() && current !== onlineMySlot()) return false;   // 🧪 vpvp: not your turn
   if (!playerTypes[current] || !playing || resolving || playerTypes[current].type === "ai") return false;
   const c = board[y]?.[x];
   return !!c && !c.isBlocked && (c.owner === -1 || c.owner === current);
@@ -2161,7 +2172,7 @@ function playFakeAd() {
 }
 
 function undoMove() {
-  if (!history.length || !playing || resolving || isReplaying) return;
+  if (!history.length || !playing || resolving || isReplaying || mode === "online") return;
 
   // Cancel any AI move that is being computed / scheduled for the current position
   clearTimeout(aiTimeout);
@@ -2325,6 +2336,7 @@ function showAchievementReveal(callback) {
 }
 
 function showGameOver(t, m, w, playerWon = false) {
+  if (modalReplayBtn) modalReplayBtn.style.display = mode === "online" ? "none" : "";
   track(playerWon ? "match_win" : "match_lose", { mode, grid: `${cols}x${rows}`, moves: movesMade, seconds: levelTimer ? Math.round(levelTimer() / 1000) : null, players: players.length });
   clearSavedMatch();
   playSound("win");
@@ -2778,6 +2790,39 @@ function openReplaysModal() {
   }
   modal.style.display = "flex";
 }
+
+// ── 🧪 VIRTUAL PVP · TESTING PHASE 1 (remove at release) ─────────────────────
+function startOnlineMatch({ players: ps, rows: r, cols: c, mySlot }) {
+  closeModal(); hideLevelComplete();
+  mode = "online";
+  isDailyMode = false;
+  players = ps.map(p => ({ name: p.name, color: p.color }));
+  playerTypes = ps.map(() => ({ type: "human" }));
+  cols = c; rows = r;
+  document.getElementById("mainMenu").style.display = "none";
+  document.getElementById("gameView")?.classList.add("active");
+  if (timerContainer) timerContainer.style.display = "none";
+  if (undoBtn) undoBtn.style.display = "none";   // undo would desync the room
+  resetGame();
+  postInfoMsg(`🧪 Virtual PvP — you are ${ps[mySlot]?.name || "?"}`, ps[mySlot]?.color || "#00ffcc", 2600);
+}
+
+initOnline({
+  startMatch: startOnlineMatch,
+  applyRemoteMove: (x, y, slot) => {
+    if (!playing || resolving) return;
+    if (slot !== current) return;                // safety: boards must agree on whose turn it is
+    makeMove(x, y);
+  },
+  endMatch: msg => {
+    playing = false;
+    stopTimer();
+    if (modalReplayBtn) modalReplayBtn.style.display = "none";
+    modalTitle.textContent = "Match ended";
+    modalBody.textContent = msg;
+    gameModal.style.display = "flex";
+  },
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 

@@ -348,6 +348,8 @@
         <button id="startGameBtn" class="btn large primary">▶ START GAME</button>
       </div>
       <button id="dailyChallengeBtn" class="daily-cta">⚡ Daily Challenge</button>
+      <!-- 🧪 VIRTUAL PVP · TESTING PHASE 1 — remove this button + #vpvpModal at release -->
+      <button id="vpvpBtn" class="vpvp-cta">🧪 Virtual PvP <span class="vpvp-tag">TEST</span></button>
 
       <div id="nextAchHint" class="next-ach-hint"></div>
       <button id="installBtn" class="install-btn" type="button" style="display:none">📲 Install app — play offline</button>
@@ -574,6 +576,41 @@
         <button id="tutNextBtn" class="tut-btn primary">Next ▶</button>
         <button id="tutSkipBtn" class="tut-btn secondary">Skip</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 🧪 VIRTUAL PVP · TESTING PHASE 1 modal (remove at release) -->
+  <div id="vpvpModal" class="modal-overlay" style="display:none">
+    <div class="modal-content vpvp-modal">
+      <h2 style="margin-top:0">🧪 Virtual PvP</h2>
+      <p class="vpvp-sub">Testing Phase 1 — play with friends live. This mode will change before release.</p>
+      <p id="vpvpModeNote" class="vpvp-note"></p>
+
+      <div id="vpvpEntry">
+        <input id="vpvpName" class="vpvp-input" maxlength="12" placeholder="Your name" />
+        <button id="vpvpCreateBtn" class="modal-btn primary" style="width:100%;margin:8px 0">➕ Create Room</button>
+        <div class="vpvp-joinrow">
+          <input id="vpvpCode" class="vpvp-input" inputmode="numeric" maxlength="7" placeholder="6-digit code" />
+          <button id="vpvpJoinBtn" class="modal-btn secondary">Join</button>
+        </div>
+      </div>
+
+      <div id="vpvpLobby" style="display:none">
+        <div class="vpvp-code-big">ROOM <span id="vpvpRoomCode"></span></div>
+        <div id="vpvpPlayers" class="vpvp-players"></div>
+        <div id="vpvpHostRow">
+          <div class="chip-row" style="justify-content:center;margin:10px 0">
+            <button class="chip selected" data-vgrid="6x6">6×6</button>
+            <button class="chip" data-vgrid="9x9">9×9</button>
+            <button class="chip" data-vgrid="6x9">6×9</button>
+          </div>
+          <button id="vpvpStartBtn" class="modal-btn primary" style="width:100%" disabled>▶ Start Match</button>
+        </div>
+        <p id="vpvpWaitNote" class="vpvp-note" style="display:none">Waiting for the host to start…</p>
+      </div>
+
+      <p id="vpvpStatus" class="vpvp-note"></p>
+      <button id="vpvpCloseBtn" class="modal-btn secondary" style="width:100%;margin-top:8px">✕ Close</button>
     </div>
   </div>
 

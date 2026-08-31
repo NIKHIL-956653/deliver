@@ -2257,3 +2257,30 @@ body.gpu-on .board-container.turn-sweep::after { animation: turnSweep 0.55s ease
     80% { transform: translate(2px, 2px); }
 }
 #board.shake-active, #gpuBoard.shake-active { animation: board-shake 0.2s ease-in-out; }
+
+/* ── 🧪 VIRTUAL PVP · TESTING PHASE 1 (remove at release) ─────────────────── */
+.vpvp-cta {
+    display: block; width: 100%; max-width: 500px; margin: 8px auto 0; padding: 12px;
+    background: rgba(155, 89, 255, 0.10); border: 1px dashed #9b59ff; border-radius: 12px;
+    color: #c9a6ff; font-weight: 700; font-size: 1rem; cursor: pointer; letter-spacing: 0.5px;
+}
+.vpvp-cta:hover { background: rgba(155, 89, 255, 0.2); }
+.vpvp-tag { font-size: 0.65rem; background: #9b59ff; color: #0a0a0a; border-radius: 4px; padding: 2px 6px; vertical-align: middle; margin-left: 6px; }
+.vpvp-modal { max-width: 380px; }
+.vpvp-sub { color: #8892a6; font-size: 0.85rem; margin: 4px 0 10px; }
+.vpvp-note { color: #8892a6; font-size: 0.8rem; min-height: 1em; margin: 8px 0 0; }
+.vpvp-input {
+    width: 100%; box-sizing: border-box; padding: 12px; border-radius: 10px;
+    border: 1px solid var(--border-color); background: rgba(255,255,255,0.06); color: #fff;
+    font-size: 1rem; text-align: center;
+}
+.vpvp-joinrow { display: flex; gap: 8px; margin-top: 4px; }
+.vpvp-joinrow .vpvp-input { flex: 1; letter-spacing: 3px; }
+.vpvp-code-big { font-size: 1.5rem; font-weight: 800; letter-spacing: 4px; color: #9b59ff; margin: 6px 0 12px; }
+.vpvp-players { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.vpvp-player {
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+    background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 10px;
+    font-weight: 600; text-align: left;
+}
+.vpvp-dot { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 8px currentColor; flex-shrink: 0; }
