@@ -178,6 +178,7 @@ export class GPUBoard {
     this._setSize(size);
     this.board.removeChildren().forEach(c => c.destroy({ children: true }));
     this.fxLayer.removeChildren().forEach(c => c.destroy({ children: true }));
+    this.pcont = null; this.pool = null;          // pooled particles died with fxLayer
     this.cells = new Array(rows * cols);
     const step = this.size + this.gap;
     for (let y = 0; y < rows; y++) {
@@ -262,53 +263,148 @@ export class GPUBoard {
   }
 
   // ── cell content ───────────────────────────────────────────────────────────
+  // Settings → Orb Size, read from the same CSS variable the DOM renderer uses.
+  orbScale() {
+    const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--orb-scale"));
+    return isFinite(v) && v > 0 ? v : 1;
+  }
+
+  /** Repaint every cell — used when orb size changes mid-match. */
+  refreshAll() {
+    for (const c of this.cells) {
+      if (!c || !c.state) continue;
+      this.updateCell(c.x, c.y, { owner: c.state.owner, count: c.state.count, isBlocked: c.state.blocked, critical: c.state.critical },
+                      this._ownerColor(c.state.owner));
+    }
+  }
+
+  // Per-cell sprite pool. Built once, then only toggled/resized/tinted — a long
+  // chain used to destroy and re-create hundreds of sprites per second, and the
+  // garbage collection behind that is what made big blasts stutter.
+  _ensureParts(c) {
+    if (c.parts) return c.parts;
+    const mkWrap = () => {
+      const wrap = new PIXI.Container();
+      const s = new PIXI.Sprite(this.tex.orb); s.anchor.set(0.5);
+      const m = new PIXI.Sprite(this.tex.marks[0]); m.anchor.set(0.5); m.visible = false;
+      wrap.addChild(s, m);
+      wrap.visible = false;
+      return { wrap, s, m };
+    };
+    const o1 = mkWrap(), o2 = mkWrap();
+    const bomb = new PIXI.Sprite(this.tex.bomb); bomb.anchor.set(0.5); bomb.visible = false;
+    const spark = new PIXI.Sprite(this.tex.spark); spark.anchor.set(0.5); spark.visible = false;
+    const bmark = new PIXI.Sprite(this.tex.marks[0]); bmark.anchor.set(0.5); bmark.visible = false;
+    c.content.addChild(o1.wrap, o2.wrap, bomb, spark, bmark);
+    c.parts = { o1, o2, bomb, spark, bmark };
+    c.spark = spark;
+    return c.parts;
+  }
+
   updateCell(x, y, data, colorStr) {
     const c = this.cells[y * this.cols + x];
     if (!c) return;
     c.state = { owner: data.owner, count: data.count, blocked: !!data.isBlocked, critical: !!data.critical };
     this._paintBase(c);
-    c.content.removeChildren().forEach(ch => ch.destroy());
-    if (c.state.blocked || data.count === 0) return;
+    const P = this._ensureParts(c);
+
+    if (c.state.blocked || data.count === 0) {
+      P.o1.wrap.visible = P.o2.wrap.visible = P.bomb.visible = P.spark.visible = P.bmark.visible = false;
+      return;
+    }
+
     const tint = colorStr ? cssColor(colorStr) : this._ownerColor(data.owner);
-    const cbMode = document.body.classList.contains("colorblind-mode");
-    const mark = ow => {
-      const m = new PIXI.Sprite(this.tex.marks[((ow % 6) + 6) % 6]);
-      m.anchor.set(0.5); return m;
-    };
-    const mkOrb = scale => {
-      // wrap orb + mark in a container so the mark is NOT distorted by the
-      // orb sprite's own scaling (children inherit parent scale)
-      const wrap = new PIXI.Container();
-      const s = new PIXI.Sprite(this.tex.orb); s.anchor.set(0.5);
-      s.width = s.height = this.size * scale; s.tint = tint;
-      wrap.addChild(s);
-      if (cbMode) {
-        const m = mark(data.owner);
-        m.width = m.height = this.size * scale * 0.6;
-        wrap.addChild(m);
+    const cb = document.body.classList.contains("colorblind-mode");
+    const oS = this.orbScale();
+    const markTex = this.tex.marks[((data.owner % 6) + 6) % 6];
+
+    const setOrb = (o, scale, px) => {
+      o.wrap.visible = true;
+      o.wrap.x = px;
+      o.s.width = o.s.height = this.size * scale * oS;
+      o.s.tint = tint;
+      o.m.visible = cb;
+      if (cb) {
+        o.m.texture = markTex;
+        o.m.width = o.m.height = this.size * scale * oS * 0.6;
       }
-      return wrap;
     };
+
     if (data.count >= 3) {
-      const bomb = new PIXI.Sprite(this.tex.bomb); bomb.anchor.set(0.5);
-      bomb.width = bomb.height = this.size * 1.05; bomb.tint = tint;
-      const spark = new PIXI.Sprite(this.tex.spark); spark.anchor.set(0.5);
-      spark.position.set(this.size * 0.18, -this.size * 0.42);
-      spark.width = spark.height = this.size * 0.28;
-      spark.__isSpark = true;
-      c.content.addChild(bomb, spark);
-      if (cbMode) {
-        const m = mark(data.owner);
-        m.width = m.height = this.size * 0.4;
-        m.position.set(0, this.size * 0.05);
-        c.content.addChild(m);
+      P.o1.wrap.visible = P.o2.wrap.visible = false;
+      P.bomb.visible = true;
+      P.bomb.width = P.bomb.height = this.size * 1.05 * oS;
+      P.bomb.tint = tint;
+      P.spark.visible = true;
+      P.spark.position.set(this.size * 0.18, -this.size * 0.42);
+      P.spark.width = P.spark.height = this.size * 0.28;
+      P.bmark.visible = cb;
+      if (cb) {
+        P.bmark.texture = markTex;
+        P.bmark.width = P.bmark.height = this.size * 0.4;
+        P.bmark.position.set(0, this.size * 0.05);
       }
     } else if (data.count === 2) {
-      const a = mkOrb(0.44), b = mkOrb(0.44);
-      a.x = -this.size * 0.22; b.x = this.size * 0.22;
-      c.content.addChild(a, b);
+      P.bomb.visible = P.spark.visible = P.bmark.visible = false;
+      setOrb(P.o1, 0.44, -this.size * 0.22);
+      setOrb(P.o2, 0.44, this.size * 0.22);
     } else {
-      c.content.addChild(mkOrb(0.72));
+      P.bomb.visible = P.spark.visible = P.bmark.visible = false;
+      P.o2.wrap.visible = false;
+      setOrb(P.o1, 0.72, 0);
+    }
+  }
+
+  // ── GPU PARTICLES ──────────────────────────────────────────────────────────
+  // Blast sparks as pooled sprites inside the board's own WebGL layer. The old
+  // path drew them on a separate full-screen 2D canvas, so every frame of a
+  // chain composited two full-screen layers; this draws them in one batch.
+  _ensureParticles() {
+    if (this.pcont) return;
+    const cap = window.__gfxTier === "low" ? 180 : window.__gfxTier === "high" ? 700 : 420;
+    this.pcont = new PIXI.ParticleContainer(cap, { position: true, scale: true, tint: true, alpha: true });
+    this.fxLayer.addChild(this.pcont);
+    this.pool = [];
+    for (let i = 0; i < cap; i++) {
+      const s = new PIXI.Sprite(this.tex.orb);
+      s.anchor.set(0.5); s.visible = false;
+      this.pcont.addChild(s);
+      this.pool.push({ s, life: 0, vx: 0, vy: 0, decay: 0.02 });
+    }
+    this.pHead = 0;
+  }
+
+  /** Spark burst at a SCREEN position (same coordinates the DOM path uses). */
+  burst(screenX, screenY, colorStr, count) {
+    this._ensureParticles();
+    const n = count || (window.__gfxTier === "low" ? 6 : window.__gfxTier === "high" ? 22 : 12);
+    const rect = this.app.view.getBoundingClientRect();
+    const x = screenX - rect.left, y = screenY - rect.top;
+    const tint = cssColor(colorStr);
+    for (let i = 0; i < n; i++) {
+      this.pHead = (this.pHead + 1) % this.pool.length;
+      const p = this.pool[this.pHead];
+      const a = Math.random() * Math.PI * 2, v = 1.6 + Math.random() * 3.4;
+      p.vx = Math.cos(a) * v; p.vy = Math.sin(a) * v;
+      p.life = 1; p.decay = 0.02 + Math.random() * 0.025;
+      const sz = Math.max(3, this.size * (0.09 + Math.random() * 0.06));
+      p.s.width = p.s.height = sz;
+      p.s.tint = tint; p.s.alpha = 1; p.s.visible = true;
+      p.s.position.set(x, y);
+    }
+  }
+
+  _tickParticles(dt) {
+    if (!this.pool) return;
+    for (const p of this.pool) {
+      if (p.life <= 0) continue;
+      p.life -= p.decay * dt;
+      if (p.life <= 0) { p.s.visible = false; continue; }
+      p.s.x += p.vx * dt;
+      p.s.y += p.vy * dt;
+      p.vy += 0.14 * dt;                 // gravity
+      p.vx *= 0.985; p.vy *= 0.985;
+      p.s.alpha = p.life;
     }
   }
 
@@ -350,15 +446,15 @@ export class GPUBoard {
   // ── ticker ─────────────────────────────────────────────────────────────────
   _tick(dt) {
     this.t += dt;
+    this._tickParticles(dt);
     const low = window.__gfxTier === "low";
     for (const c of this.cells) {
       if (!c) continue;
       if (c.popT > 0) { c.popT = Math.max(0, c.popT - dt * 0.12); c.root.scale.set(1 + 0.14 * Math.sin(Math.PI * (1 - c.popT))); }
       else if (c.pressT > 0) { c.root.scale.set(0.9); }
       else if (c.root.scale.x !== 1) c.root.scale.set(1);
-      if (!low && c.state.count >= 3 && c.content.children.length) {
-        const spark = c.content.children.find(ch => ch.__isSpark);
-        if (spark) spark.alpha = 0.55 + 0.45 * Math.sin(this.t * 0.55 + c.x);
+      if (!low && c.state.count >= 3 && c.spark) {
+        c.spark.alpha = 0.55 + 0.45 * Math.sin(this.t * 0.55 + c.x);
         if (window.__gfxTier === "high") c.content.rotation = 0.02 * Math.sin(this.t * 0.5 + c.y);
       }
       if (this.pulseOwner >= 0 && c.state.owner === this.pulseOwner && c.glow.visible) {

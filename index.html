@@ -149,7 +149,10 @@
       </div>
 
       <div class="ss-pane" data-pane="game">
-        <div class="ss-section" id="rendererSection">
+        <!-- Renderer is GPU for everyone; the DOM renderer stays as a silent
+             fallback for devices without WebGL. Section hidden, not deleted, so
+             QA can re-enable it by removing the style attribute. -->
+        <div class="ss-section" id="rendererSection" style="display:none">
           <div class="sidebar-header">RENDERER</div>
           <div class="chips" data-for="rendererMode">
             <button type="button" class="chip" data-value="gpu">GPU ⚡</button>
@@ -449,6 +452,7 @@
       <div class="modal-actions">
         <button id="modalMenuBtn" class="modal-btn secondary">Menu</button>
         <button id="modalReplayBtn" class="modal-btn secondary">Play Again</button>
+        <button id="modalShareBtn" class="modal-btn secondary" style="display:none;">📤 Share</button>
         <button id="modalNextBtn" class="modal-btn primary" style="display:none;">Next Level ▶</button>
         <button id="modalSkipBtn" class="modal-btn skip-btn" style="display:none;">📺 Watch Ad to Skip</button>
         <button id="modalLeaderboardBtn" class="modal-btn primary" style="display:none;">🌐 Submit Score</button>
@@ -598,6 +602,8 @@
       <div id="vpvpLobby" style="display:none">
         <div class="vpvp-code-big">ROOM <span id="vpvpRoomCode"></span></div>
         <div id="vpvpPlayers" class="vpvp-players"></div>
+        <div class="vpvp-colorlabel">Your colour</div>
+        <div id="vpvpColors" class="vpvp-colors"></div>
         <div id="vpvpHostRow">
           <div class="chip-row" style="justify-content:center;margin:10px 0">
             <button class="chip selected" data-vgrid="6x6">6×6</button>
@@ -620,6 +626,12 @@
     // GPUBoard.available() is false and the game falls back to the Classic renderer.
     (function () {
       try {
+        // One-time migration: the GPU/Classic toggle is hidden now, so anyone
+        // who had picked Classic would be stuck on it forever. Clear it once.
+        if (!localStorage.getItem("neon_renderer_migrated")) {
+          if (localStorage.getItem("neon_renderer") === "classic") localStorage.removeItem("neon_renderer");
+          localStorage.setItem("neon_renderer_migrated", "1");
+        }
         if (localStorage.getItem("neon_renderer") === "classic") return;
         var c = document.createElement("canvas");
         if (!c.getContext("webgl") && !c.getContext("experimental-webgl")) return;

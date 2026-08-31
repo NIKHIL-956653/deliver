@@ -27,7 +27,9 @@ const SLOT_COLORS = ["#ff4757", "#2ed573", "#3742fa", "#ffa502"];
 const MAX_PLAYERS = 4;
 const clientId = "c_" + Math.random().toString(36).slice(2, 10);
 
-const CONFIGURED = !!SUPABASE_URL && !SUPABASE_URL.includes("YOUR_PROJECT");
+// localStorage.neon_vpvp_local = "1" forces same-device mode (used by automated tests).
+const FORCE_LOCAL = (() => { try { return localStorage.getItem("neon_vpvp_local") === "1"; } catch { return false; } })();
+const CONFIGURED = !FORCE_LOCAL && !!SUPABASE_URL && !SUPABASE_URL.includes("YOUR_PROJECT");
 
 // ── Transports ───────────────────────────────────────────────────────────────
 class LocalTransport {
@@ -53,8 +55,10 @@ class LocalTransport {
   _recv(msg) {
     if (msg.type === "hello") {
       const known = this.roster.get(msg.from);
+      const changed = !known || JSON.stringify(known.meta) !== JSON.stringify(msg.payload.meta);
       this.roster.set(msg.from, { meta: msg.payload.meta, joinedAt: msg.payload.joinedAt, lastSeen: Date.now() });
-      if (!known) { this._notifyRoster(); if (this.meta) this._emit("hello", { meta: this.meta, joinedAt: this.joinedAt }); }
+      if (changed) this._notifyRoster();                       // new peer OR colour/name change
+      if (!known && this.meta) this._emit("hello", { meta: this.meta, joinedAt: this.joinedAt });
       return;
     }
     if (msg.type === "bye") { if (this.roster.delete(msg.from)) this._notifyRoster(); return; }
@@ -68,6 +72,10 @@ class LocalTransport {
   }
   async join(meta) {
     this.meta = meta; this.joinedAt = Date.now();
+    this._emit("hello", { meta, joinedAt: this.joinedAt });
+  }
+  async setMeta(meta) {                       // colour pick — keeps joinedAt (join order)
+    this.meta = meta;
     this._emit("hello", { meta, joinedAt: this.joinedAt });
   }
   send(type, payload) { this._emit(type, payload); }
@@ -113,13 +121,17 @@ class SupabaseTransport {
       this.channel.subscribe(async status => {
         if (status === "SUBSCRIBED") {
           clearTimeout(to);
-          await this.channel.track({ ...meta, joinedAt: Date.now() });
+          this.joinedAt = Date.now();
+          await this.channel.track({ ...meta, joinedAt: this.joinedAt });
           res();
         } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           clearTimeout(to); rej(new Error(status));
         }
       });
     });
+  }
+  async setMeta(meta) {                       // re-track presence with the new colour
+    await this.channel?.track({ ...meta, joinedAt: this.joinedAt });
   }
   send(type, payload) {
     this.channel?.send({ type: "broadcast", event: type, payload: { data: payload, from: clientId } });
@@ -139,8 +151,12 @@ let inMatch = false;
 let mySlot = -1;
 let sendSeq = 0, recvSeq = 0;
 let myName = "";
+let myColor = null;        // null until claimed; lobby assigns the first free one
 let gridChoice = "6x6";
 let matchIds = [];         // client ids locked in at match start
+let curTurn = 0;           // whose turn the game says it is
+let botSlots = new Set();  // slots whose player dropped — driven by the controller
+let botThinking = false;
 
 // Closing the tab / navigating away tells the room immediately.
 window.addEventListener("pagehide", () => onlineLeave());
@@ -159,6 +175,7 @@ export function onlineLeave() {
   if (inMatch) t.send("left", { name: myName });
   t.leave();
   inMatch = false; mySlot = -1; roomCode = null; isHost = false; roster = [];
+  curTurn = 0; botSlots = new Set(); botThinking = false;
   sendSeq = 0; recvSeq = 0;
   hide(ui.modal);
 }
@@ -178,6 +195,7 @@ export function initOnline(gameHooks) {
   ui.status = document.getElementById("vpvpStatus");
   ui.roomCode = document.getElementById("vpvpRoomCode");
   ui.players = document.getElementById("vpvpPlayers");
+  ui.colors = document.getElementById("vpvpColors");
   ui.hostRow = document.getElementById("vpvpHostRow");
   ui.startBtn = document.getElementById("vpvpStartBtn");
   ui.waitNote = document.getElementById("vpvpWaitNote");
@@ -227,6 +245,7 @@ async function enterRoom(code) {
     return;
   }
   track("vpvp_room", { host: isHost, transport: CONFIGURED ? "supabase" : "local" });
+  myColor = null;                              // claimed in renderLobby once we see the roster
   hide(ui.entry); show(ui.lobby);
   ui.roomCode.textContent = roomCode.slice(0, 3) + "-" + roomCode.slice(3);
   ui.hostRow.style.display = isHost ? "" : "none";
@@ -239,9 +258,7 @@ function wireTransport() {
   transport.onRoster(list => {
     roster = list.slice(0, MAX_PLAYERS);
     if (!inMatch) { renderLobby(); return; }
-    // Mid-match disconnect (closed tab, lost connection): presence shrinks → end match.
-    const gone = matchIds.filter(id => !list.some(p => p.id === id));
-    if (gone.length) endWithNote("👋 A player disconnected — match ended.");
+    syncBotSlots();          // mid-match disconnect → AI takes that seat
   });
   transport.on("start", payload => {
     // Everyone (host included, via self-delivery) starts from the same payload.
@@ -250,6 +267,7 @@ function wireTransport() {
     mySlot = slot;
     inMatch = true;
     matchIds = payload.order.slice();
+    curTurn = 0; botSlots = new Set(); botThinking = false;
     sendSeq = 0; recvSeq = 0;
     hide(ui.modal);
     hooks.startMatch({ players: payload.players, rows: payload.rows, cols: payload.cols, mySlot });
@@ -264,9 +282,58 @@ function wireTransport() {
     if (m.slot !== mySlot) sendSeq = m.seq;          // keep everyone's next seq aligned
     hooks.applyRemoteMove(m.x, m.y, m.slot);
   });
-  transport.on("left", p => {
-    if (inMatch) endWithNote(`👋 ${p?.name || "A player"} left — match ended.`);
-  });
+  transport.on("left", () => { if (inMatch) syncBotSlots(); });
+}
+
+// ── AI TAKEOVER ──────────────────────────────────────────────────────────────
+// A dropped player's seat keeps playing so the match doesn't die. Exactly ONE
+// client computes those moves (the connected player with the lowest slot) and
+// broadcasts them as normal moves, so every board stays identical.
+function slotConnected(slot) {
+  const id = matchIds[slot];
+  return !!id && roster.some(p => p.id === id);
+}
+function controllerSlot() {
+  for (let i = 0; i < matchIds.length; i++) if (slotConnected(i)) return i;
+  return -1;
+}
+
+function syncBotSlots() {
+  if (!inMatch) return;
+  let announced = null;
+  for (let i = 0; i < matchIds.length; i++) {
+    if (!slotConnected(i) && !botSlots.has(i)) {
+      botSlots.add(i);
+      announced = hooks.playerName?.(i) || "A player";
+      track("vpvp_takeover", { slot: i });
+    }
+  }
+  if (announced) hooks.notify?.(`🤖 ${announced} dropped — AI is playing their orbs`);
+  if (botSlots.size >= matchIds.length) { endWithNote("Everyone else left — match ended."); return; }
+  driveBotIfNeeded();
+}
+
+export function onlineTurnChanged(cur) {
+  if (!inMatch) return;
+  curTurn = cur;
+  driveBotIfNeeded();
+}
+
+function driveBotIfNeeded() {
+  if (!inMatch || botThinking) return;
+  if (!botSlots.has(curTurn)) return;              // a real player's turn
+  if (controllerSlot() !== mySlot) return;         // someone else drives this move
+  botThinking = true;
+  const think = 500 + Math.random() * 400;         // human-ish pause
+  setTimeout(async () => {
+    botThinking = false;
+    if (!inMatch || !botSlots.has(curTurn)) return;
+    if (controllerSlot() !== mySlot) return;
+    try {
+      const mv = await hooks.computeAIMove(curTurn);
+      if (mv && inMatch) transport?.send("move", { seq: ++sendSeq, slot: curTurn, x: mv.x, y: mv.y });
+    } catch (e) { console.warn("bot move failed", e); }
+  }, think);
 }
 
 function endWithNote(msg) {
@@ -275,16 +342,53 @@ function endWithNote(msg) {
   onlineLeave();
 }
 
+// Colour taken by someone who joined before me? Then it isn't mine to claim.
+function takenColors(exceptMe = true) {
+  return roster.filter(p => !(exceptMe && p.id === clientId)).map(p => p.color).filter(Boolean);
+}
+
+function claimColor(c) {
+  myColor = c;
+  transport?.setMeta({ name: myName, color: myColor });
+  renderLobby();
+}
+
 function renderLobby() {
   if (!ui.players) return;
+
+  // First render (or my colour got taken by an earlier joiner) → take the first free one.
+  const others = takenColors();
+  if (!myColor || others.includes(myColor)) {
+    const myIdx = Math.max(0, roster.findIndex(p => p.id === clientId));
+    const mine = SLOT_COLORS[myIdx];                       // unique per join position
+    const free = (!others.includes(mine) ? mine : SLOT_COLORS.find(c => !others.includes(c))) || SLOT_COLORS[0];
+    if (free !== myColor) { myColor = free; transport?.setMeta({ name: myName, color: myColor }); }
+  }
+
   ui.players.innerHTML = "";
   roster.forEach((p, i) => {
     const row = document.createElement("div");
     row.className = "vpvp-player";
-    row.innerHTML = `<span class="vpvp-dot" style="background:${SLOT_COLORS[i]}"></span>
+    row.innerHTML = `<span class="vpvp-dot" style="background:${p.color || SLOT_COLORS[i]}"></span>
       <span>${p.name || "Player"}${p.id === clientId ? " (you)" : ""}${i === 0 ? " · host" : ""}</span>`;
     ui.players.appendChild(row);
   });
+
+  // Colour picker — everyone picks their own; taken ones are locked out.
+  if (ui.colors) {
+    ui.colors.innerHTML = "";
+    SLOT_COLORS.forEach(c => {
+      const taken = others.includes(c);
+      const sw = document.createElement("button");
+      sw.className = "vpvp-swatch" + (c === myColor ? " mine" : "") + (taken ? " taken" : "");
+      sw.style.background = c;
+      sw.disabled = taken;
+      sw.title = taken ? "Taken" : "Play as this colour";
+      if (!taken) sw.addEventListener("click", () => claimColor(c));
+      ui.colors.appendChild(sw);
+    });
+  }
+
   if (ui.startBtn) ui.startBtn.disabled = roster.length < 2;
   if (isHost) setStatus(roster.length < 2 ? "Waiting for friends to join…" : `${roster.length} players ready`);
 }
@@ -292,9 +396,13 @@ function renderLobby() {
 function hostStart() {
   if (roster.length < 2) return;
   const [c, r] = gridChoice.split("x").map(Number);
-  transport.send("start", {
-    order: roster.map(p => p.id),
-    players: roster.map((p, i) => ({ name: p.name || "Player", color: SLOT_COLORS[i] })),
-    cols: c, rows: r,
+  const used = [];
+  const players = roster.map((p, i) => {
+    // Everyone's own pick wins; a clash (rare race) falls back to the first free colour.
+    let col = p.color;
+    if (!col || used.includes(col)) col = SLOT_COLORS.find(sc => !used.includes(sc)) || SLOT_COLORS[i];
+    used.push(col);
+    return { name: p.name || "Player", color: col };
   });
+  transport.send("start", { order: roster.map(p => p.id), players, cols: c, rows: r });
 }

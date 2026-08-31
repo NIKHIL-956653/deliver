@@ -200,7 +200,9 @@ body.theme-cyberpunk.hud-sharp .cell {
 }
 
 /* --- ORBS & BOMBS --- */
-.orb { width: 76%; height: 76%; border-radius: 999px; position: relative; }
+/* --orb-scale is set by Settings → Orb Size (default 1) */
+:root { --orb-scale: 1; }
+.orb { width: calc(76% * var(--orb-scale, 1)); height: calc(76% * var(--orb-scale, 1)); border-radius: 999px; position: relative; }
 .orb::before {
     content: '';
     position: absolute;
@@ -214,7 +216,7 @@ body.theme-cyberpunk.hud-sharp .cell {
 .orb::after { content:""; position:absolute; inset:0; border-radius:999px; box-shadow:0 0 10px currentColor, 0 0 22px currentColor, inset 0 0 6px rgba(255,255,255,0.20); }
 .orb.one { background: currentColor; }
 .pair-improved { width:100%; height:100%; display:flex; justify-content:center; align-items:center; gap:4px; }
-.orb.two-orb { width:48%; height:48%; border-radius: 999px; position:relative; animation:float-orb 2.5s ease-in-out infinite; }
+.orb.two-orb { width:calc(48% * var(--orb-scale, 1)); height:calc(48% * var(--orb-scale, 1)); border-radius: 999px; position:relative; animation:float-orb 2.5s ease-in-out infinite; }
 .pair-improved .orb.two-orb:nth-child(2) { animation-delay: 1.25s; }
 @keyframes float-orb { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-4px);} }
 .bombsvg { width: 120%; height: 120%; display: block; margin: 0 auto; position: relative; animation: jitter 0.1s infinite; }
@@ -2284,3 +2286,21 @@ body.gpu-on .board-container.turn-sweep::after { animation: turnSweep 0.55s ease
     font-weight: 600; text-align: left;
 }
 .vpvp-dot { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 8px currentColor; flex-shrink: 0; }
+
+.vpvp-colorlabel { color: #8892a6; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin: 10px 0 6px; }
+.vpvp-colors { display: flex; gap: 10px; justify-content: center; margin-bottom: 4px; }
+.vpvp-swatch {
+    width: 42px; height: 42px; border-radius: 50%; cursor: pointer;
+    border: 3px solid transparent; box-shadow: 0 0 10px currentColor; transition: transform 0.15s, border-color 0.15s;
+    position: relative;
+}
+.vpvp-swatch:hover:not(:disabled) { transform: scale(1.12); }
+.vpvp-swatch.mine { border-color: #fff; box-shadow: 0 0 16px #fff; transform: scale(1.1); }
+.vpvp-swatch.taken { opacity: 0.28; cursor: not-allowed; filter: grayscale(0.5); }
+.vpvp-swatch.taken::after {
+    content: "✕"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; font-size: 1.1rem; text-shadow: 0 0 4px #000;
+}
+
+/* Orb size also drives the bomb icon so 3+ cells match the setting */
+.cell svg, .bomb-icon { transform: scale(var(--orb-scale, 1)); transform-origin: center; }

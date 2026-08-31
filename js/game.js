@@ -17,9 +17,10 @@ import { recordGameEnd, tryUnlockAchievement, loadData, saveTheme, getSavedTheme
 import { SAGA_LEVELS } from "./levels.js";
 import { haptic, hapticsEnabled, setHaptics, hapticsSupported } from "./haptics.js";
 import { track, reportError, timer as trackTimer } from "./analytics.js";
+import { shareResult } from "./sharecard.js";
 import { GPUBoard } from "./renderer.js";
 // 🧪 VIRTUAL PVP · TESTING PHASE 1 — remove this import (and all online* hooks) at release
-import { initOnline, onlineActive, onlineMySlot, onlineSendMove, onlineLeave } from "./online.js";
+import { initOnline, onlineActive, onlineMySlot, onlineSendMove, onlineLeave, onlineTurnChanged } from "./online.js";
 window.neonTrack = track;
 import { isPremium, onEntitlementChange, refreshEntitlement, purchasePremium, restorePurchases,
          getOfferings, isMockBilling, setMockPremium, getOwnedSkins, addOwnedSkin,
@@ -207,12 +208,18 @@ function init() {
     if (wrapper) wrapper.style.display = e.target.value === "ai" ? "" : "none";
   });
 
+  // ORB SIZE — persisted, applies to both renderers, repaints immediately.
+  const ORB_KEY = "neon_orb_scale";
+  function applyOrbScale(mult, save) {
+    document.documentElement.style.setProperty("--orb-scale", mult);
+    if (save) localStorage.setItem(ORB_KEY, mult);
+    document.querySelectorAll("#orbSizePills .size-pill").forEach(b =>
+      b.classList.toggle("active", b.dataset.mult === String(mult)));
+    if (gpu) gpu.refreshAll();          // GPU sprites need a repaint; CSS reflows itself
+  }
+  applyOrbScale(localStorage.getItem(ORB_KEY) || "1.0", false);
   document.querySelectorAll("#orbSizePills .size-pill").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll("#orbSizePills .size-pill").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      document.documentElement.style.setProperty('--orb-scale', btn.dataset.mult);
-    });
+    btn.addEventListener("click", () => applyOrbScale(btn.dataset.mult, true));
   });
 
   const themeSelect = $("#themeSelect");
@@ -1173,6 +1180,9 @@ function renderBlastSkinSelector() {
 
 function spawnBlast(x, y, color) {
   const skin = getSavedBlastSkin();
+  // Default sparks render inside the GPU board (no second full-screen canvas).
+  // The designed skins still use fx.js — they are distinct effects, not sparks.
+  if (gpu && (!skin || skin === "default")) { gpu.burst(x, y, color); return; }
   if (skin === "shockwave")      spawnShockwave(x, y, color);
   else if (skin === "void")      spawnVoidCollapse(x, y, color);
   else if (skin === "pulse")     spawnPulse(x, y, color);
@@ -1511,6 +1521,7 @@ function initGPU() {
       else if (playing && !resolving && playerTypes[current]?.type !== "ai") haptic("error");
     });
     document.body.classList.add("gpu-on");
+    window.__gpu = gpu;                    // debug handle (console + automated tests)
     track("renderer", { mode: "gpu" });
   } catch (e) {
     reportError(e, { where: "gpu-init" });
@@ -1979,7 +1990,8 @@ function checkWin() {
     }
 
     // Show leaderboard submit button if player won vs AI
-    const playerWon = alive[0] === 0;
+    lastWinnerIdx = alive[0];
+    const playerWon = alive[0] === mySeat();
     const hasAI = playerTypes.some((pt, i) => i !== 0 && pt?.type === 'ai');
     if (playerWon && hasAI && LEADERBOARD_ENABLED) {
       const submitBtn = document.getElementById("modalLeaderboardBtn");
@@ -2012,6 +2024,7 @@ function advanceTurn() {
     replayStep();
     return;
   }
+  if (onlineActive()) { onlineTurnChanged(current); return; }   // 🧪 vpvp
   if (current === 0) { turnsSinceHint++; maybeNudgeHint(); }
   if (playing) processTurn();
 }
@@ -2218,6 +2231,7 @@ function startTimer() {
       stopTimer();
       playing = false;
       const bestIdx = scores.indexOf(Math.max(...scores));
+      lastWinnerIdx = bestIdx;
       const aiPlayer = playerTypes && playerTypes.find((pt, i) => i !== 0 && pt && pt.type === 'ai');
       recordGameEnd(bestIdx, aiPlayer?.difficulty || null);
       if (bestIdx === 0) {
@@ -2240,7 +2254,7 @@ function startTimer() {
         replayRecord = null;
       }
       track("time_attack_timeout", { winner: bestIdx });
-      showGameOver("Time's Up!", `${winnerName} wins with the most orbs!`, true, bestIdx === 0);
+      showGameOver("Time's Up!", `${winnerName} wins with the most orbs!`, true, bestIdx === mySeat());
     }
   }, 1000);
 }
@@ -2342,6 +2356,7 @@ function showAchievementReveal(callback) {
 
 function showGameOver(t, m, w, playerWon = false) {
   if (modalReplayBtn) modalReplayBtn.style.display = mode === "online" ? "none" : "";
+  setupShareButton(playerWon);
   track(playerWon ? "match_win" : "match_lose", { mode, grid: `${cols}x${rows}`, moves: movesMade, seconds: levelTimer ? Math.round(levelTimer() / 1000) : null, players: players.length });
   clearSavedMatch();
   playSound("win");
@@ -2796,6 +2811,35 @@ function openReplaysModal() {
   modal.style.display = "flex";
 }
 
+let lastWinnerIdx = 0;                    // filled in when a match ends (share card)
+function mySeat() { return onlineActive() ? onlineMySlot() : 0; }
+
+// ── SHARE CARD ────────────────────────────────────────────────────────────────
+// Offered after any win: a 1080×1080 victory image straight to the share sheet.
+function setupShareButton(playerWon) {
+  const btn = document.getElementById("modalShareBtn");
+  if (!btn) return;
+  if (!playerWon) { btn.style.display = "none"; return; }
+  btn.style.display = "";
+  btn.textContent = "📤 Share";
+  btn.disabled = false;
+  btn.onclick = async () => {
+    btn.disabled = true; btn.textContent = "…";
+    const res = await shareResult({
+      winnerName: players[lastWinnerIdx]?.name || "Player",
+      winnerColor: players[lastWinnerIdx]?.color || "#00ffcc",
+      players: players.map(p => ({ name: p.name, color: p.color })),
+      mode, grid: `${cols}×${rows}`, moves: movesMade,
+      online: mode === "online",
+    });
+    track("share_card", { result: res, mode });
+    btn.disabled = false;
+    btn.textContent = res === "shared" ? "✓ Shared" : res === "downloaded" ? "✓ Image saved" : "📤 Share";
+    if (res === "downloaded") postInfoMsg("Image saved — caption copied, paste it with the picture", "#00ffcc", 3400);
+    if (res === "failed") postInfoMsg("Couldn't create the image on this device", "#ff4757", 2600);
+  };
+}
+
 // ── 🧪 VIRTUAL PVP · TESTING PHASE 1 (remove at release) ─────────────────────
 function startOnlineMatch({ players: ps, rows: r, cols: c, mySlot }) {
   closeModal(); hideLevelComplete();
@@ -2810,10 +2854,17 @@ function startOnlineMatch({ players: ps, rows: r, cols: c, mySlot }) {
   if (undoBtn) undoBtn.style.display = "none";   // undo would desync the room
   resetGame();
   postInfoMsg(`🧪 Virtual PvP — you are ${ps[mySlot]?.name || "?"}`, ps[mySlot]?.color || "#00ffcc", 2600);
+  onlineTurnChanged(0);
 }
 
 initOnline({
   startMatch: startOnlineMatch,
+  playerName: slot => players[slot]?.name || "A player",
+  notify: msg => postInfoMsg(msg, "#ffa502", 3000),
+  computeAIMove: async slot => {
+    if (!playing || !board.length) return null;
+    return makeAIMove(board, slot, "greedy", rows, cols, players.length, 1);
+  },
   applyRemoteMove: (x, y, slot) => {
     if (!playing || resolving) return;
     if (slot !== current) return;                // safety: boards must agree on whose turn it is
