@@ -2,7 +2,7 @@
  * Bump CACHE_VERSION on every release: old caches are deleted on activate.
  * Strategy: same-origin GET → cache first, refresh in background (stale-while-revalidate).
  * Cross-origin (leaderboard API, analytics) → network only, never cached. */
-const CACHE_VERSION = "ncr-v8";
+const CACHE_VERSION = "ncr-v9";
 const SHELL = [
   "./", "./index.html", "./style.css", "./manifest.json",
   "./js/game.js", "./js/board.js", "./js/ai.js", "./js/ai.worker.js", "./js/fx.js", "./js/sound.js",

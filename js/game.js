@@ -2054,15 +2054,20 @@ function computeMercy() {
   let m = 0;
   m += Math.min(50, hintsUsed * 12);               // asked for help → soften
   m += Math.min(30, sagaConsecutiveFails * 15);    // lost this level before → soften
+  m += Math.min(45, Math.max(0, playerMoves - 25) * 1.5);  // long level → AI tires out
   const total = scores.reduce((a, b) => a + b, 0);
   if (total > 0 && movesMade >= players.length) {
     const share = scores[0] / total;               // player's orb share
     if (share < 0.2) m += 25;
     else if (share < 0.35) m += 15;
-    else if (share > 0.6) m -= 20;                 // cruising → AI plays sharp
+    else if (share > 0.6 && playerMoves < 25) m -= 20;   // only EARLY cruising plays sharp
   }
   const level = SAGA_LEVELS[sagaCurrentLevel];
   if (level?.isBoss) m -= 15;                      // bosses stay meaner
+  // Heavy help-seeking is a quit signal — boss/situation penalties can't cancel it.
+  if (hintsUsed >= 12) m = Math.max(m, 100);
+  else if (hintsUsed >= 6) m = Math.max(m, 80);
+  else if (hintsUsed >= 3) m = Math.max(m, 55);
   return Math.max(0, Math.min(100, m));
 }
 

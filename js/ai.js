@@ -191,6 +191,18 @@ export function chooseBySkill(ranked, skill = 1) {
   }
   if (best.v >= WIN_SCORE && skill >= 0.25) return best;
 
+  // Graceful throw: at rock-bottom skill the AI actively (but quietly) loses.
+  // It plays from its WEAKEST third — placements that feed the player's chains.
+  // They look like normal expansion moves, then get eaten. No obvious charity.
+  if (skill <= 0.2 && ranked.length > 2) {
+    const losers = ranked.filter(m => m.v < WIN_SCORE);
+    if (losers.length && Math.random() < 0.7) {
+      const third = Math.max(1, Math.floor(losers.length / 3));
+      const worst = losers.slice(-third);
+      return worst[Math.floor(Math.random() * worst.length)];
+    }
+  }
+
   const slipChance = 1 - skill;                       // how often we don't play the best
   if (Math.random() > slipChance) {
     const top = ranked.filter(m => m.v === best.v);
