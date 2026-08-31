@@ -35,7 +35,6 @@ const undoBtn = $("#undoBtn");
 const soundBtn = $("#soundBtn");
 const playerCountSelect = $("#playerCountSelect");
 const modeSelect = document.getElementById("gameModeSelect");
-const aiDifficultySelect = document.getElementById("aiDifficultySelect");
 const timerContainer = document.getElementById("timerContainer");
 const timeLeftSpan = document.getElementById("timeLeft");
 const territoryMeter = document.getElementById("territoryMeter");
@@ -162,7 +161,8 @@ function init() {
     };
     aiWorker.onerror = (err) => {
       console.warn('AI worker error, falling back to main thread:', err);
-      aiWorker = null; // disable worker, processTurn will fall back
+      aiWorker = null; // disable worker, main-thread AI takes over
+      if (playing && !resolving && playerTypes[current]?.type === 'ai') processTurn();
     };
   } catch (e) {
     console.warn('Web Workers not supported, using main thread AI:', e);
@@ -603,7 +603,10 @@ function updateDailyUI() {
   const completed = isDailyCompleted();
   const streakEl = document.getElementById("streakDisplay");
   const btn = document.getElementById("dailyChallengeBtn");
-  if (streakEl) streakEl.textContent = streak > 0 ? `🔥 ${streak} day streak!` : "";
+  if (streakEl) {
+    streakEl.textContent = streak > 0 ? `🔥 ${streak} day streak!` : "";
+    streakEl.style.display = streak > 0 ? "" : "none";
+  }
   if (btn) {
     btn.disabled = completed;
     btn.textContent = completed ? "✓ Done — Come back tomorrow!" : "⚡ Daily Challenge";
@@ -615,6 +618,8 @@ function startDailyChallenge() {
   track("daily_start", { streak: getDailyStreak() });
   isDailyMode = true;
   mode = "saga";
+  if (modeSelect) modeSelect.value = mode;
+  document.querySelectorAll(".mode-card").forEach(c => c.classList.toggle("selected", c.dataset.mode === mode));
   sagaCurrentLevel = getDailyLevelIndex();
   sagaConsecutiveFails = 0;
   document.getElementById("mainMenu").style.display = "none";
@@ -664,6 +669,7 @@ function showChainBadge(waveCount) {
   const tierIdx    = waveCount >= 25 ? 5 : waveCount >= 20 ? 4 : waveCount >= 15 ? 3
                    : waveCount >= 10 ? 2 : waveCount >= 5  ? 1 : 0;
 
+  if (waveCount > (getCounters().maxCombo || 0)) setCounter('maxCombo', waveCount);
   if (waveCount >= 20)      { unlockAchievement("combo_20", "Annihilator",    "Triggered a 20+ wave chain reaction"); grantXP(100); }
   else if (waveCount >= 15) { unlockAchievement("combo_15", "Supernova",      "Triggered a 15+ wave chain reaction"); grantXP(75); }
   else if (waveCount >= 10) { unlockAchievement("combo_10", "Nuclear!",       "Triggered a 10+ wave chain reaction"); grantXP(50); }
@@ -700,22 +706,8 @@ function grantXP(amount) {
 }
 
 function showRankUpToast(rankName) {
-  const container = document.getElementById("achievement-container");
-  if (!container) return;
-  const toast = document.createElement("div");
-  toast.className = "achievement-toast rank-up-toast";
-  toast.innerHTML = `
-    <div class="icon">⬆️</div>
-    <div class="text">
-      <div class="title">Rank Up!</div>
-      <div class="desc">You are now: ${rankName}</div>
-    </div>
-  `;
-  container.appendChild(toast);
-  setTimeout(() => {
-    toast.classList.add("hide");
-    setTimeout(() => toast.remove(), 500);
-  }, 4000);
+  // Routed through #infoPanel like achievement toasts (old container is display:none)
+  postInfoMsg(`⬆️ Rank Up! You are now: ${rankName}`, "#00ffcc", 4000);
 }
 
 function updateXPBar() {
@@ -1093,12 +1085,11 @@ function openAchievementModal() {
 
 // ── ORB SKINS ─────────────────────────────────────────────────────────────────
 const SKINS = [
-  { id: "default",       label: "Classic",  preview: "🔵", minRank: 0, coinPrice: 0   },
-  { id: "skin-fire",     label: "Fire",     preview: "🔴", minRank: 1, coinPrice: 200 },
-  { id: "skin-ice",      label: "Ice",      preview: "🩵", minRank: 2, coinPrice: 400 },
-  { id: "skin-electric", label: "Electric", preview: "💚", minRank: 3, coinPrice: 600 },
+  { id: "default",       label: "Classic",  preview: "🔵", coinPrice: 0   },
+  { id: "skin-fire",     label: "Fire",     preview: "🔴", coinPrice: 200 },
+  { id: "skin-ice",      label: "Ice",      preview: "🩵", coinPrice: 400 },
+  { id: "skin-electric", label: "Electric", preview: "💚", coinPrice: 600 },
 ];
-const RANK_NAMES = ["Rookie","Soldier","Veteran","Pro","Elite","Master","Legend"];
 
 function applySkin(skinId) {
   if (!canUseOrbSkin(skinId)) { openPaywall("skin", skinId); return; }
@@ -1252,8 +1243,8 @@ function showTutorial() {
   if (!overlay) return;
   overlay.style.display = 'flex';
   updateTutStep();
-  document.getElementById('tutNextBtn')?.addEventListener('click', advanceTutorial);
-  document.getElementById('tutSkipBtn')?.addEventListener('click', closeTutorial);
+  const nb = document.getElementById('tutNextBtn'); if (nb) nb.onclick = advanceTutorial;
+  const sb = document.getElementById('tutSkipBtn'); if (sb) sb.onclick = closeTutorial;
 }
 
 function updateTutStep() {
@@ -1281,25 +1272,16 @@ function handleModeChange() {
     timerContainer.style.display = mode === "timeAttack" ? "inline-block" : "none";
 
   const standardControls = document.getElementById("standardControls");
-  const sagaMenuInfo = document.getElementById("sagaMenuInfo");
   const sagaControls = document.getElementById("sagaControls");
 
   if (mode === "saga") {
     if (standardControls) standardControls.style.display = "none";
     if (sagaControls) sagaControls.style.display = "flex";
-    if (sagaMenuInfo) sagaMenuInfo.style.display = "none";
     const pct = document.getElementById("playerConfigToggle"); if (pct) pct.style.display = "none";
-    // Hide player config for saga (it manages its own players)
-    const playerSection = document.querySelector(".menu-section:last-of-type");
-    if (playerSection) playerSection.style.display = "none";
   } else {
     if (standardControls) standardControls.style.display = "flex";
     if (sagaControls) sagaControls.style.display = "none";
-    if (sagaMenuInfo) sagaMenuInfo.style.display = "none";
     const pct = document.getElementById("playerConfigToggle"); if (pct) pct.style.display = "";
-    // Show & render player config
-    const playerSection = document.querySelector(".menu-section:last-of-type");
-    if (playerSection) playerSection.style.display = "";
     setupPlayers(parseInt(playerCountSelect?.value, 10) || 2);
   }
 }
@@ -1458,6 +1440,7 @@ function initSagaLevel(level) {
 }
 
 function handleMove(x, y) {
+  if (isReplaying) return;                       // replays are watch-only
   if (!playerTypes[current]) return;
   if (!playing || resolving || playerTypes[current].type === "ai") return;
   if (board[y][x].isBlocked) return;
@@ -1716,6 +1699,7 @@ function bindCell(cell, x, y) {
   });
 }
 function canPlayCell(x, y) {
+  if (isReplaying) return false;                 // replays are watch-only
   if (!playerTypes[current] || !playing || resolving || playerTypes[current].type === "ai") return false;
   const c = board[y]?.[x];
   return !!c && !c.isBlocked && (c.owner === -1 || c.owner === current);
@@ -2218,12 +2202,27 @@ function startTimer() {
       stopTimer();
       playing = false;
       const bestIdx = scores.indexOf(Math.max(...scores));
+      const aiPlayer = playerTypes && playerTypes.find((pt, i) => i !== 0 && pt && pt.type === 'ai');
+      recordGameEnd(bestIdx, aiPlayer?.difficulty || null);
       if (bestIdx === 0) {
         unlockAchievement("first_win", "First Victory!", "Won your very first game");
         unlockAchievement("speed_win", "Speed Demon!", "Won a Time Attack match");
+        const speedWins = incCounter('speedWins');
+        if (speedWins >= 10) unlockAchievement("speed_win_10", "Time Master", "Won 10 Time Attack matches");
+        else if (speedWins >= 3) unlockAchievement("speed_win_3", "Speed Freak", "Won 3 Time Attack matches");
+        const currentStreak = incCounter('winStreak');
+        if (currentStreak > (getCounters().bestWinStreak || 0)) setCounter('bestWinStreak', currentStreak);
         grantXP(50);
+      } else {
+        setCounter('winStreak', 0);
       }
       const winnerName = players[bestIdx]?.name || "Unknown";
+      if (replayRecord && !isReplaying) {
+        replayRecord.winner = bestIdx;
+        replayRecord.winnerName = winnerName;
+        saveReplay(replayRecord);
+        replayRecord = null;
+      }
       track("time_attack_timeout", { winner: bestIdx });
       showGameOver("Time's Up!", `${winnerName} wins with the most orbs!`, true, bestIdx === 0);
     }
@@ -2700,7 +2699,7 @@ function startReplayPlayback(replayData) {
   cols = c; rows = r;
 
   // Switch to game view
-  document.getElementById("mainMenu").classList.remove("active");
+  document.getElementById("mainMenu").style.display = "none";
   document.getElementById("gameView").classList.add("active");
   document.getElementById("replayControls").style.display = "flex";
   document.querySelector(".game-header").style.display = "none";
@@ -2718,20 +2717,12 @@ function startReplayPlayback(replayData) {
   board = Array.from({ length: rows }, () =>
     Array.from({ length: cols }, () => ({ owner: -1, count: 0, isBlocked: false }))
   );
-  boardEl.innerHTML = "";
-  boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell-w))`;
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      const cell = document.createElement("button");
-      cell.className = "cell";
-      // no click handler — watch-only
-      boardEl.appendChild(cell);
-    }
-  }
+  buildBoardDOM();          // GPU or DOM — input blocked by isReplaying guards
 
   updateStatus();
   updateScores();
   paintAll();
+  refitBoard();
   updateReplayUI();
   replayStep();
 }

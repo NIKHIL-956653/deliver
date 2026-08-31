@@ -271,7 +271,6 @@
         <option value="saga">Saga Mode</option>
       </select>
       <select id="themeSelect" style="display:none"><option value="default">Neon</option><option value="theme-matrix">Matrix</option><option value="theme-magma">Magma</option><option value="theme-cyberpunk">Cyber</option><option value="theme-ice">Ice</option><option value="theme-void">Void</option><option value="theme-electric">Storm</option><option value="theme-minimal">Minimal</option><option value="theme-flatline">Flatline</option><option value="theme-steampunk">Clockwork</option><option value="theme-wood">Wood</option><option value="theme-metal">Metal</option></select>
-      <div id="sagaMenuInfo" style="display:none"></div>
 
       <!-- ── OPTIONS (chips bound to the hidden selects) ──────────── -->
       <section class="mode-options">
@@ -384,7 +383,6 @@
 
     <div class="hud-container">
         <div id="sagaObjective"></div>
-        <div id="hudMessage" class="hud-message"></div>
         <div id="territoryMeter" class="territory-meter"></div>
         <button id="sagaSkipBtn" style="display:none; margin-top:6px; padding:5px 14px; border:1px solid #ffd700; color:#ffd700; background:rgba(255,215,0,0.08); border-radius:8px; cursor:pointer; font-size:0.85rem;">📺 Watch Ad to Skip Level</button>
     </div>
@@ -579,7 +577,19 @@
     </div>
   </div>
 
-  <script src="js/lib/pixi.min.js"></script>
+  <script>
+    // Load the 456 KB GPU library only when it will be used. document.write keeps
+    // it synchronous, so PIXI is defined before the game module runs. If skipped,
+    // GPUBoard.available() is false and the game falls back to the Classic renderer.
+    (function () {
+      try {
+        if (localStorage.getItem("neon_renderer") === "classic") return;
+        var c = document.createElement("canvas");
+        if (!c.getContext("webgl") && !c.getContext("experimental-webgl")) return;
+        document.write('<script src="js/lib/pixi.min.js"><\/script>');
+      } catch (e) {}
+    })();
+  </script>
   <script type="module" src="js/game.js"></script>
 
   <script>

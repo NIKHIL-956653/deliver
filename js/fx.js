@@ -143,9 +143,8 @@ export function spawnParticles(x, y, color) {
 }
 
 export function triggerShake() {
-    const board = document.querySelector('.board');
+    const board = document.getElementById('gpuBoard') || document.querySelector('.board');
     if (!board) return;
-    if (navigator.vibrate) navigator.vibrate(20); 
     board.classList.remove('shake-active');
     void board.offsetWidth; 
     board.classList.add('shake-active');

@@ -82,6 +82,38 @@ function makeTextures(app, size) {
   b2.beginPath(); b2.moveTo(bs * 0.5, bs * 0.2); b2.quadraticCurveTo(bs * 0.5, bs * 0.06, bs * 0.68, bs * 0.08); b2.stroke();
   t.bomb = PIXI.Texture.from(bc);
 
+  // colourblind marks — a distinct shape per player, high-contrast on any orb colour
+  t.marks = [];
+  for (let pi = 0; pi < 6; pi++) {
+    const ms = 40;
+    const mc = document.createElement("canvas"); mc.width = mc.height = ms;
+    const m2 = mc.getContext("2d");
+    m2.lineWidth = 5; m2.lineJoin = "round"; m2.lineCap = "round";
+    m2.strokeStyle = "rgba(0,0,0,0.85)"; m2.fillStyle = "#ffffff";
+    const cx = ms / 2, cy = ms / 2, q = ms * 0.30;
+    const draw = fill => {
+      m2.beginPath();
+      switch (pi) {
+        case 0: m2.arc(cx, cy, q * 0.75, 0, Math.PI * 2); break;                      // ● dot
+        case 1: m2.rect(cx - q, cy - q * 0.85, q * 2, q * 0.55);                      // ☰ stripes
+                m2.rect(cx - q, cy + q * 0.3, q * 2, q * 0.55); break;
+        case 2: m2.moveTo(cx, cy - q); m2.lineTo(cx + q, cy + q * 0.8);               // ▲ triangle
+                m2.lineTo(cx - q, cy + q * 0.8); m2.closePath(); break;
+        case 3: m2.moveTo(cx, cy - q); m2.lineTo(cx + q, cy);                          // ◆ diamond
+                m2.lineTo(cx, cy + q); m2.lineTo(cx - q, cy); m2.closePath(); break;
+        case 4: m2.moveTo(cx - q, cy - q); m2.lineTo(cx + q, cy + q);                  // ✕ cross
+                m2.moveTo(cx + q, cy - q); m2.lineTo(cx - q, cy + q); break;
+        case 5: m2.arc(cx, cy, q * 0.8, 0, Math.PI * 2); break;                        // ◯ ring
+      }
+      if (fill) { if (pi === 4) { m2.lineWidth = 7; m2.strokeStyle = "#fff"; m2.stroke(); } else if (pi === 5) { m2.lineWidth = 6; m2.strokeStyle = "#fff"; m2.stroke(); } else m2.fill(); }
+      else { m2.stroke(); }
+    };
+    draw(false);   // dark outline first
+    m2.lineWidth = 5; m2.strokeStyle = "rgba(0,0,0,0.85)";
+    draw(true);    // white shape on top
+    t.marks.push(PIXI.Texture.from(mc));
+  }
+
   const sc = document.createElement("canvas"); sc.width = sc.height = 16;
   const s2 = sc.getContext("2d");
   const sg = s2.createRadialGradient(8, 8, 0, 8, 8, 8);
@@ -176,6 +208,10 @@ export class GPUBoard {
     this.app.renderer.resize(w, h);
     this.app.view.style.width = w + "px";
     this.app.view.style.height = h + "px";
+    if (this.tex) for (const t of Object.values(this.tex)) {
+      if (Array.isArray(t)) t.forEach(x => x?.destroy?.(true));
+      else t?.destroy?.(true);
+    }
     this.tex = makeTextures(this.app, size);
   }
 
@@ -234,9 +270,24 @@ export class GPUBoard {
     c.content.removeChildren().forEach(ch => ch.destroy());
     if (c.state.blocked || data.count === 0) return;
     const tint = colorStr ? cssColor(colorStr) : this._ownerColor(data.owner);
+    const cbMode = document.body.classList.contains("colorblind-mode");
+    const mark = ow => {
+      const m = new PIXI.Sprite(this.tex.marks[((ow % 6) + 6) % 6]);
+      m.anchor.set(0.5); return m;
+    };
     const mkOrb = scale => {
+      // wrap orb + mark in a container so the mark is NOT distorted by the
+      // orb sprite's own scaling (children inherit parent scale)
+      const wrap = new PIXI.Container();
       const s = new PIXI.Sprite(this.tex.orb); s.anchor.set(0.5);
-      s.width = s.height = this.size * scale; s.tint = tint; return s;
+      s.width = s.height = this.size * scale; s.tint = tint;
+      wrap.addChild(s);
+      if (cbMode) {
+        const m = mark(data.owner);
+        m.width = m.height = this.size * scale * 0.6;
+        wrap.addChild(m);
+      }
+      return wrap;
     };
     if (data.count >= 3) {
       const bomb = new PIXI.Sprite(this.tex.bomb); bomb.anchor.set(0.5);
@@ -246,6 +297,12 @@ export class GPUBoard {
       spark.width = spark.height = this.size * 0.28;
       spark.__isSpark = true;
       c.content.addChild(bomb, spark);
+      if (cbMode) {
+        const m = mark(data.owner);
+        m.width = m.height = this.size * 0.4;
+        m.position.set(0, this.size * 0.05);
+        c.content.addChild(m);
+      }
     } else if (data.count === 2) {
       const a = mkOrb(0.44), b = mkOrb(0.44);
       a.x = -this.size * 0.22; b.x = this.size * 0.22;
@@ -273,6 +330,11 @@ export class GPUBoard {
     for (const c of this.cells) if (c) c.root.alpha = (c === this.hintCell) ? 1 : 0.25;
   }
   clearHint() {
+    if (this.hintCell) {
+      this.hintCell.root.scale.set(1);
+      this.hintCell.lastMv.visible = (this.hintCell === this.lastMoveCell);
+      this.hintCell.lastMv.alpha = 1;
+    }
     this.hintCell = null;
     for (const c of this.cells) if (c) c.root.alpha = 1;
   }

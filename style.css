@@ -64,8 +64,7 @@ body.theme-cyberpunk #mainMenu { background: radial-gradient(circle at center, #
 body.theme-magma, 
 body.theme-magma .screen, 
 body.theme-magma #mainMenu, 
-body.theme-magma #gameView,
-body.theme-magma #mainMenu .menu-scroll {
+body.theme-magma #gameView {
     background: transparent !important;
 }
 
@@ -121,9 +120,6 @@ h1 { margin: 18px 0 6px; color: var(--primary); text-shadow: 0 0 18px var(--glow
 
 /* --- MAIN MENU STYLES --- */
 #mainMenu { align-items: center; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px; }
-.menu-scroll { width: 100%; max-width: 500px; flex-shrink: 0; display: flex; flex-direction: column; gap: 15px; margin: auto 0; }
-.menu-section { background: rgba(20, 20, 20, 0.85); border: 1px solid var(--border-color); border-radius: 12px; padding: 15px; flex-shrink: 0; }
-.menu-section h3 { margin-top: 0; color: var(--primary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
 .menu-footer { padding: 20px 10px 60px 10px; width: 100%; max-width: 500px; display: flex; gap: 10px; flex-shrink: 0; }
 
 /* --- GAME VIEW & HUD --- */
@@ -133,14 +129,6 @@ h1 { margin: 18px 0 6px; color: var(--primary); text-shadow: 0 0 18px var(--glow
     width: 100%; max-width: 600px; margin: 0 auto 10px;
     display: flex; flex-direction: column; gap: 4px; padding: 0 10px;
 }
-
-.hud-message {
-    height: 0; overflow: hidden; text-align: center; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
-    color: #fff; text-shadow: 0 0 10px var(--glow); opacity: 0; transition: opacity 0.2s, height 0.2s;
-}
-.hud-message.active { height: 24px; }
-.hud-message.active { opacity: 1; animation: popText 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-@keyframes popText { 0% { transform: scale(0.5); } 100% { transform: scale(1); } }
 
 .territory-meter {
     height: 12px; width: 100%; background: #222; border-radius: 6px;
@@ -328,8 +316,9 @@ body.theme-cyberpunk.hud-sharp .cell {
 .matrix-btn { background: #000; color: #0f0; border: 1px solid #0f0; padding: 10px; font-family: 'Courier New', monospace; font-size: 0.8rem; width: 100%; cursor: pointer; transition: all 0.2s; border-radius: 5px; }
 .matrix-btn.active { background: #0f0; color: #000; box-shadow: 0 0 10px #0f0; font-weight: bold; }
 
-/* FIX: Low Visibility Rain Behind Board */
-#board {
+/* FIX: Low Visibility Rain Behind Board (Matrix theme only — was global,
+   which flattened every other theme's board styling in Classic mode) */
+body.theme-matrix #board {
     background: rgba(0, 0, 0, 0.75) !important;
     backdrop-filter: blur(2px) !important;
     border: 1px solid rgba(0, 255, 65, 0.3) !important;
@@ -355,17 +344,6 @@ body.theme-cyberpunk.hud-sharp .cell {
 #achievement-container { display: none; }
 
 /* --- SYSTEM FEEDBACK FX --- */
-
-/* AI THINKING PULSE */
-.badge.calculating {
-    animation: aiPulse 0.8s infinite alternate ease-in-out !important;
-    box-shadow: 0 0 20px #fff, 0 0 40px var(--glow) !important;
-}
-
-@keyframes aiPulse {
-    from { transform: scale(1); filter: brightness(1); }
-    to { transform: scale(1.3); filter: brightness(1.5); }
-}
 
 /* CRITICAL MASS SYSTEM SHOCK */
 .cell.critical {
@@ -420,20 +398,6 @@ body.theme-magma .cell.blocked { background: rgba(5,1,0,0.85) !important; border
     transition: opacity 0.3s;
 }
 #sagaObjective.active { opacity: 1; }
-
-/* --- SAGA MENU INFO --- */
-#sagaMenuInfo {
-    display: none;
-    color: #ffd700;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-align: center;
-    padding: 8px;
-    border: 1px solid #ffd70055;
-    border-radius: 8px;
-    background: rgba(255,215,0,0.05);
-    margin-top: 8px;
-}
 
 /* --- LEVEL SELECT SCREEN --- */
 .level-select-content {
@@ -1173,9 +1137,9 @@ body.theme-ice .cell.owned {
     border-color: #00b4d8 !important;
     background: rgba(0, 55, 90, 0.50) !important;
     box-shadow: 0 0 20px #00b4d81c inset, 0 0 7px #00b4d828 !important;
-    animation: ice-shimmer 4.5s ease-in-out infinite !important;
+    animation: ice-board-shimmer 4.5s ease-in-out infinite !important;
 }
-@keyframes ice-shimmer {
+@keyframes ice-board-shimmer {
     0%, 100% { filter: brightness(1); }
     35%       { filter: brightness(1.2); }
     65%       { filter: brightness(0.93); }
@@ -1321,7 +1285,6 @@ body.theme-minimal #mainMenu, body.theme-minimal #gameView {
 }
 body.theme-minimal #mainMenu { background: #f4f1eb !important; }
 body.theme-minimal h1 { color: #1e3a5f; text-shadow: none !important; }
-body.theme-minimal .menu-section { background: #eae6df !important; border-color: #cac4bb !important; }
 body.theme-minimal #statusText, body.theme-minimal .hud-label { color: #2d2d2d !important; text-shadow: none !important; }
 /* Board: clean paper with only a drop-shadow, no glow ring */
 body.theme-minimal .board {
@@ -2284,3 +2247,13 @@ body.gpu-on .board-container::after {
   transform: translateX(-100%); mix-blend-mode: screen;
 }
 body.gpu-on .board-container.turn-sweep::after { animation: turnSweep 0.55s ease-out; }
+
+/* Board shake on big chain blasts (fx.js adds .shake-active for 200ms) */
+@keyframes board-shake {
+    0%, 100% { transform: translate(0, 0); }
+    20% { transform: translate(-3px, 1px); }
+    40% { transform: translate(3px, -1px); }
+    60% { transform: translate(-2px, -2px); }
+    80% { transform: translate(2px, 2px); }
+}
+#board.shake-active, #gpuBoard.shake-active { animation: board-shake 0.2s ease-in-out; }
