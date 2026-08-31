@@ -31,20 +31,26 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 // Cap the backing-store resolution: a 3× phone screen is ~9× the pixels of 1× for
 // particles nobody can tell apart. 1.5× on mobile, 2× on desktop.
-const DPR = Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2);
+function gfxTier() { return window.__gfxTier || (isMobile ? "med" : "high"); }
+function dpr() {
+    const t = gfxTier();
+    return Math.min(window.devicePixelRatio || 1, t === "low" ? 1 : t === "high" ? 2 : 1.5);
+}
 function resize() {
-    canvas.width = Math.round(window.innerWidth * DPR);
-    canvas.height = Math.round(window.innerHeight * DPR);
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    const D = dpr();
+    canvas.width = Math.round(window.innerWidth * D);
+    canvas.height = Math.round(window.innerHeight * D);
+    ctx.setTransform(D, 0, 0, D, 0, 0);
 }
 window.addEventListener('resize', resize);
+window.addEventListener('gfxchange', resize);
 resize();
 
 // CORE ANIMATION LOOP — runs only while there is something to draw.
 // Idle: no rAF, no clearRect, no GPU upload of a full-screen canvas 60×/s.
 let fxRunning = false;
 let fxIdleFrames = 0;
-const MAX_PARTICLES = isMobile ? 600 : 2000;
+function maxParticles() { const t = gfxTier(); return t === "low" ? 250 : t === "high" ? 2000 : 600; }
 function ensureFXLoop() {
     if (fxRunning) return;
     fxRunning = true;
@@ -107,7 +113,7 @@ function updateFX() {
 for (const arr of [particles, rings]) {
     const push = arr.push.bind(arr);
     arr.push = (...items) => {
-        if (arr === particles && particles.length + items.length > MAX_PARTICLES) particles.splice(0, items.length);
+        if (arr === particles && particles.length + items.length > maxParticles()) particles.splice(0, items.length);
         const r = push(...items);
         ensureFXLoop();
         return r;
@@ -115,7 +121,8 @@ for (const arr of [particles, rings]) {
 }
 
 export function spawnParticles(x, y, color) {
-    const count = isMobile ? 12 : 24; 
+    const t = gfxTier();
+    const count = t === "low" ? 6 : t === "high" ? 24 : 12;
     const baseSize = isMobile ? 4 : 3;
 
     for (let i = 0; i < count; i++) {

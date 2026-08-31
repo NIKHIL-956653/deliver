@@ -60,6 +60,19 @@
   </div>
 
 
+  <!-- ── PERFORMANCE ADVISOR NOTE ────────────────────────────────────── -->
+  <div id="perfNote" class="perf-note" style="display:none">
+    <span class="pn-emoji">🐢💨</span>
+    <div class="pn-text">
+      <b>Feeling a little laggy?</b>
+      <span>Set <b>Graphics → Low</b> and try the <b>Classic</b> theme for silky-smooth chains. Want the full neon show? Play the web version — tablets &amp; higher-end phones are perfect for it! ✨</span>
+    </div>
+    <div class="pn-actions">
+      <button id="perfNoteOpen" type="button">⚙️ Fix it</button>
+      <button id="perfNoteClose" type="button" aria-label="Dismiss">✕</button>
+    </div>
+  </div>
+
   <!-- ── PAYWALL ─────────────────────────────────────────────────────── -->
   <div id="paywallBackdrop" class="pw-backdrop"></div>
   <div id="paywallSheet" class="pw-sheet">
@@ -99,7 +112,7 @@
             <button type="button" class="chip" data-value="wire">Neon lines</button>
           </div>
         </div>
-        <div class="ss-section">
+        <div class="ss-section" id="themeSection">
           <div class="sidebar-header">THEME</div>
           <select id="sidebarThemeSelect" style="display:none"><option value="default">Neon</option><option value="theme-matrix">Matrix</option><option value="theme-magma">Magma</option><option value="theme-cyberpunk">Cyber</option><option value="theme-ice">Ice</option><option value="theme-void">Void</option><option value="theme-electric">Storm</option><option value="theme-minimal">Minimal</option><option value="theme-flatline">Flatline</option><option value="theme-steampunk">Clockwork</option><option value="theme-wood">Wood</option><option value="theme-metal">Metal</option></select>
           <div id="themeSwatches" class="theme-grid"><button type="button" class="theme-sw" data-theme="default"><span class="sw" style="background:linear-gradient(135deg,#47f2ff,#0a2a30)"></span><span>Neon</span></button><button type="button" class="theme-sw" data-theme="theme-matrix"><span class="sw" style="background:linear-gradient(135deg,#00ff41,#001a06)"></span><span>Matrix</span></button><button type="button" class="theme-sw" data-theme="theme-magma"><span class="sw" style="background:linear-gradient(135deg,#ff6a00,#3a0a00)"></span><span>Magma</span></button><button type="button" class="theme-sw" data-theme="theme-cyberpunk"><span class="sw" style="background:linear-gradient(135deg,#ff2bd6,#2b002b)"></span><span>Cyber</span></button><button type="button" class="theme-sw" data-theme="theme-ice"><span class="sw" style="background:linear-gradient(135deg,#8fd3ff,#021020)"></span><span>Ice</span></button><button type="button" class="theme-sw" data-theme="theme-void"><span class="sw" style="background:linear-gradient(135deg,#a066ff,#0a0014)"></span><span>Void</span></button><button type="button" class="theme-sw" data-theme="theme-electric"><span class="sw" style="background:linear-gradient(135deg,#ffe066,#030316)"></span><span>Storm</span></button><button type="button" class="theme-sw" data-theme="theme-minimal"><span class="sw" style="background:#f4f1eb"></span><span>Minimal</span></button><button type="button" class="theme-sw" data-theme="theme-flatline"><span class="sw" style="background:linear-gradient(135deg,#ff3355,#111)"></span><span>Flatline</span></button><button type="button" class="theme-sw" data-theme="theme-steampunk"><span class="sw" style="background:linear-gradient(135deg,#c98a3a,#1a1004)"></span><span>Clockwork</span></button><button type="button" class="theme-sw" data-theme="theme-wood"><span class="sw" style="background:linear-gradient(135deg,#8b5a2b,#2a1608)"></span><span>Wood</span></button><button type="button" class="theme-sw" data-theme="theme-metal"><span class="sw" style="background:linear-gradient(135deg,#c0c8d0,#2a2f38)"></span><span>Metal</span></button></div>
@@ -136,6 +149,22 @@
       </div>
 
       <div class="ss-pane" data-pane="game">
+        <div class="ss-section" id="rendererSection">
+          <div class="sidebar-header">RENDERER</div>
+          <div class="chips" data-for="rendererMode">
+            <button type="button" class="chip" data-value="gpu">GPU ⚡</button>
+            <button type="button" class="chip" data-value="classic">Classic</button>
+          </div>
+        </div>
+        <div class="ss-section" id="gfxSection">
+          <div class="sidebar-header">GRAPHICS</div>
+          <div class="chips" data-for="gfxTier">
+            <button type="button" class="chip active" data-value="auto">Auto</button>
+            <button type="button" class="chip" data-value="low">Low</button>
+            <button type="button" class="chip" data-value="med">Medium</button>
+            <button type="button" class="chip" data-value="high">Ultra</button>
+          </div>
+        </div>
         <div class="ss-section">
           <div class="sidebar-header">AI SPEED</div>
           <select id="aiSpeedSelect" style="display:none">
@@ -550,6 +579,7 @@
     </div>
   </div>
 
+  <script src="js/lib/pixi.min.js"></script>
   <script type="module" src="js/game.js"></script>
 
   <script>

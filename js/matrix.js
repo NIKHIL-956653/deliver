@@ -43,9 +43,10 @@ const fontSize = 18;
 
 export function drawMatrix() {
     // --- THE SPEED BRAKE ---
-    // This skips frames to slow down the animation
+    // This skips frames to slow down the animation (doubled on Low graphics)
+    const lowGfx = window.__gfxTier === "low";
     frameCount++;
-    if (frameCount < speedLimit) {
+    if (frameCount < (lowGfx ? speedLimit * 2 : speedLimit)) {
         animationId = requestAnimationFrame(drawMatrix);
         return;
     }
@@ -65,7 +66,7 @@ export function drawMatrix() {
     ctx.fillStyle = matrixSettings.isFlashing ? "#fff" : "#00ff41";
     ctx.font = fontSize + "px monospace";
 
-    for (let i = 0; i < window.drops.length; i++) {
+    for (let i = 0; i < window.drops.length; i += (lowGfx ? 2 : 1)) {  // Low: half the rain columns
         const charset = matrixSettings.japaneseOn ? japanese : binary;
         const text = charset.charAt(Math.floor(Math.random() * charset.length));
         ctx.fillText(text, i * fontSize, window.drops[i] * fontSize);

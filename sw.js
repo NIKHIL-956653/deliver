@@ -2,12 +2,13 @@
  * Bump CACHE_VERSION on every release: old caches are deleted on activate.
  * Strategy: same-origin GET → cache first, refresh in background (stale-while-revalidate).
  * Cross-origin (leaderboard API, analytics) → network only, never cached. */
-const CACHE_VERSION = "ncr-v1";
+const CACHE_VERSION = "ncr-v4";
 const SHELL = [
   "./", "./index.html", "./style.css", "./manifest.json",
   "./js/game.js", "./js/board.js", "./js/ai.js", "./js/ai.worker.js", "./js/fx.js", "./js/sound.js",
   "./js/storage.js", "./js/levels.js", "./js/player.js", "./js/matrix.js", "./js/magma.js",
   "./js/premium.js", "./js/haptics.js", "./js/analytics.js", "./js/leaderboard.js", "./js/leaderboard-config.js",
+  "./js/renderer.js", "./js/lib/pixi.min.js",
   "./sounds/click.mp3", "./sounds/explode.mp3", "./sounds/win.mp3",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/maskable-512.png",
 ];

@@ -17,6 +17,7 @@ import { recordGameEnd, tryUnlockAchievement, loadData, saveTheme, getSavedTheme
 import { SAGA_LEVELS } from "./levels.js";
 import { haptic, hapticsEnabled, setHaptics, hapticsSupported } from "./haptics.js";
 import { track, reportError, timer as trackTimer } from "./analytics.js";
+import { GPUBoard } from "./renderer.js";
 window.neonTrack = track;
 import { isPremium, onEntitlementChange, refreshEntitlement, purchasePremium, restorePurchases,
          getOfferings, isMockBilling, setMockPremium, getOwnedSkins, addOwnedSkin,
@@ -295,6 +296,19 @@ function init() {
     e.currentTarget.textContent = localMagmaSettings.heatActive ? "HEAT: ON" : "HEAT: OFF";
   });
 
+  initGPU();
+  const rKey = "neon_renderer";
+  document.querySelectorAll(".chips[data-for=rendererMode] .chip").forEach(ch => {
+    ch.classList.toggle("active", (localStorage.getItem(rKey) || "gpu") === ch.dataset.value);
+    ch.addEventListener("click", () => {
+      if ((localStorage.getItem(rKey) || "gpu") === ch.dataset.value) return;
+      localStorage.setItem(rKey, ch.dataset.value);
+      track("renderer_switch", { to: ch.dataset.value });
+      location.reload();                       // clean swap; an unfinished match resumes from autosave
+    });
+  });
+  if (!GPUBoard.available()) document.getElementById("rendererSection")?.remove();
+
   handleModeChange();
 
   // ── LEADERBOARD ────────────────────────────────────────────────────────────
@@ -393,8 +407,16 @@ function initPremiumUI() {
   document.getElementById("devPremiumToggle")?.addEventListener("click", () => setMockPremium(!isPremium()));
   // Board style: wireframe (default, theme shows through) or tiles
   const bsKey = "neon_board_style";
-  const applyBoardStyle = s => { document.body.classList.toggle("board-wire", s !== "tiles"); localStorage.setItem(bsKey, s); document.querySelectorAll(".chips[data-for=boardStyle] .chip").forEach(ch => ch.classList.toggle("active", ch.dataset.value === s)); refitBoard(); };
+  const applyBoardStyle = s => { document.body.classList.toggle("board-wire", s !== "tiles"); localStorage.setItem(bsKey, s); document.querySelectorAll(".chips[data-for=boardStyle] .chip").forEach(ch => ch.classList.toggle("active", ch.dataset.value === s)); gpu?.applyTheme(); refitBoard(); };
   applyBoardStyle(localStorage.getItem(bsKey) || "tiles");   // default: the original tile board; "wire" is the optional lines look
+  document.querySelectorAll(".chips[data-for=gfxTier] .chip").forEach(ch => ch.addEventListener("click", () => { localStorage.setItem(GFX_KEY, ch.dataset.value); applyGfx(); perfTourAdvance(); }));
+  document.getElementById("sidebarToggle")?.addEventListener("click", () => setTimeout(perfTourOnSettingsOpen, 350));
+  document.getElementById("menuSettingsBtn")?.addEventListener("click", () => setTimeout(perfTourOnSettingsOpen, 350));
+  document.getElementById("closeSidebar")?.addEventListener("click", perfTourEnd);
+  document.getElementById("themeSwatches")?.addEventListener("click", () => setTimeout(perfTourEnd, 400));
+  document.getElementById("perfNoteClose")?.addEventListener("click", dismissPerfNote);
+  document.getElementById("perfNoteOpen")?.addEventListener("click", () => { dismissPerfNote(); document.getElementById("sidebarToggle")?.click(); });
+  applyGfx();
   document.querySelectorAll(".chips[data-for=boardStyle] .chip").forEach(ch => ch.addEventListener("click", () => applyBoardStyle(ch.dataset.value)));
   // Phones: default to the tall 6×9 board (fills a portrait screen, ~45% bigger cells than 9×9)
   if (IS_TOUCH && !localStorage.getItem("neon_grid_touched") && gridSelect) { gridSelect.value = "6x9"; gridSelect.dispatchEvent(new Event("change")); }
@@ -492,6 +514,7 @@ function openSidebar() {
 
 function applyTheme(t) {
   track("theme_apply", { theme: t });
+  setTimeout(() => gpu?.applyTheme(), 0);
   document.body.classList.remove(
     "theme-cyberpunk", "theme-magma", "theme-matrix",
     "theme-electric", "theme-ice", "theme-void", "theme-minimal",
@@ -504,8 +527,7 @@ function applyTheme(t) {
 
   if (t === "theme-matrix") {
     document.body.classList.add("theme-matrix");
-    matrixSettings.rainOn = true;
-    drawMatrix();
+    matrixSettings.rainOn = true; drawMatrix();
   } else if (t === "theme-cyberpunk") {
     document.body.classList.add("theme-cyberpunk");
     if (cyberSettings.scanlines)
@@ -1173,7 +1195,7 @@ function setCellSize(c, r) {
   const cs = getComputedStyle(container);
   const bs = getComputedStyle(boardEl);
   const px = v => parseFloat(v) || 0;
-  const gap = px(bs.columnGap || bs.gap) || 4;
+  const gap = gpu ? 4 : (px(bs.columnGap || bs.gap) || 4);
   const rect = container.getBoundingClientRect();
   const availW = rect.width  - px(cs.paddingLeft) - px(cs.paddingRight)
                - px(bs.paddingLeft) - px(bs.paddingRight) - px(bs.borderLeftWidth) - px(bs.borderRightWidth);
@@ -1187,8 +1209,10 @@ function setCellSize(c, r) {
   let size = Math.floor(Math.min((maxW - gap * (c - 1)) / c, (maxH - gap * (r - 1)) / r));
   if (!isFinite(size) || size <= 0) size = 40;          // not laid out yet — fallback, refit follows
   size = Math.max(18, Math.min(wire ? 96 : 88, size));
+  lastCellSize = size;
   document.documentElement.style.setProperty('--cell-w', size + 'px');
   document.documentElement.style.setProperty('--cell-h', size + 'px');
+  if (gpu && gpu.rows && gpu.size !== size) gpu.resize(size);
 }
 function refitBoard() {
   cancelAnimationFrame(_fitRaf);
@@ -1441,7 +1465,16 @@ function handleMove(x, y) {
   makeMove(x, y);
 }
 
+function clearHintSpotlight() {
+  clearTimeout(window.__hintTimer);
+  gpu?.clearHint();
+  if (gpu) { highlightLastMove(); }
+  boardEl.classList.remove("hint-dim");
+  for (const el of boardEl.querySelectorAll(".hint-active")) { el.classList.remove("hint-active"); el.title = ""; }
+}
+
 async function makeMove(x, y) {
+  clearHintSpotlight();
   playSound("click");
   lastMove = { x, y };
 
@@ -1462,7 +1495,7 @@ async function makeMove(x, y) {
   movesMade++;
   if (current === 0 && playerTypes[0]?.type !== "ai") playerMoves++;
 
-  drawCell(x, y, board, boardEl, cols, players, current);
+  paintCell(x, y);
   firstMove[current] = true;
 
   resolving = true;
@@ -1471,6 +1504,113 @@ async function makeMove(x, y) {
   updateScores();
 
   if (playing && !checkWin()) advanceTurn();
+}
+
+// ── RENDERER (GPU sprites via PixiJS, DOM as automatic fallback) ─────────────
+let gpu = null;
+let lastCellSize = 48;
+function gpuWanted() { return localStorage.getItem("neon_renderer") !== "classic"; }
+function initGPU() {
+  if (gpu || !gpuWanted() || !GPUBoard.available()) return;
+  try {
+    gpu = new GPUBoard(boardEl.parentElement, (x, y) => {
+      if (canPlayCell(x, y)) { haptic("place"); handleMove(x, y); }
+      else if (playing && !resolving && playerTypes[current]?.type !== "ai") haptic("error");
+    });
+    document.body.classList.add("gpu-on");
+    track("renderer", { mode: "gpu" });
+  } catch (e) {
+    reportError(e, { where: "gpu-init" });
+    gpu = null;
+    document.body.classList.remove("gpu-on");
+  }
+}
+// One call for every cell repaint — GPU sprite update or DOM drawCell.
+function paintCell(x, y, withPulse = false) {
+  if (gpu) {
+    const d = board[y][x];
+    const cap = capacity(x, y, rows, cols);
+    gpu.updateCell(x, y, { ...d, critical: d.count > 0 && d.count === cap - 1 }, players[d.owner]?.color);
+  } else {
+    drawCell(x, y, board, boardEl, cols, players, current, withPulse);
+  }
+}
+
+// ── GRAPHICS QUALITY (PUBG-style: Auto / Low / Medium / Ultra) ────────────────
+// Tier drives: CSS effects (body.gfx-*), particle counts + canvas resolution
+// (fx.js reads window.__gfxTier), blast wave pacing, and theme canvas backgrounds.
+const GFX_KEY = "neon_gfx";
+function gfxSetting() { return localStorage.getItem(GFX_KEY) || "auto"; }
+function resolveGfxTier() {
+  const s = gfxSetting();
+  if (s !== "auto") return s;
+  if (!IS_TOUCH) return "high";
+  const mem = navigator.deviceMemory || 4;          // GB (Chrome/Android reports it)
+  const cores = navigator.hardwareConcurrency || 4;
+  if (mem <= 3 || cores <= 4) return "low";
+  if (mem <= 6) return "med";
+  return "high";
+}
+function applyGfx() {
+  const t = resolveGfxTier();
+  window.__gfxTier = t;
+  document.body.classList.remove("gfx-low", "gfx-med", "gfx-high");
+  document.body.classList.add("gfx-" + t);
+  document.querySelectorAll(".chips[data-for=gfxTier] .chip").forEach(ch => ch.classList.toggle("active", ch.dataset.value === gfxSetting()));
+  window.dispatchEvent(new Event("gfxchange"));    // fx.js re-sizes its canvas
+  applyTheme(currentThemeId());                    // low: theme canvases stop; high: restart
+  track("gfx_tier", { setting: gfxSetting(), resolved: t });
+}
+function gfxWaveDelays() {
+  return window.__gfxTier === "low" ? [70, 30, 12] : window.__gfxTier === "high" ? [40, 16, 8] : [50, 20, 8];
+}
+// ── PERFORMANCE ADVISOR ───────────────────────────────────────────────────────
+// If a chain visibly stutters on this device, gently guide the player (once):
+// cute note → the ⚙️ gear glows → in Settings, Graphics pulses (step 1), then
+// Themes pulses (step 2). Nothing is ever forced off.
+const PERF_NOTE_KEY = "neon_perf_note_done";
+let tourStep = 0;   // 0 = off, 1 = highlight Graphics, 2 = highlight Themes
+function maybePerfAdvisor(badWaves, totalWaves) {
+  if (localStorage.getItem(PERF_NOTE_KEY)) return;
+  if (badWaves < 3 || totalWaves < 4) return;                    // needs real, repeated stutter
+  localStorage.setItem(PERF_NOTE_KEY, "1");
+  track("perf_note_shown", { badWaves, totalWaves, tier: window.__gfxTier });
+  const note = document.getElementById("perfNote");
+  if (note) { note.style.display = "flex"; requestAnimationFrame(() => note.classList.add("show")); }
+  document.getElementById("sidebarToggle")?.classList.add("attention");
+  document.getElementById("menuSettingsBtn")?.classList.add("attention");
+  tourStep = 1;
+}
+function dismissPerfNote() {
+  const note = document.getElementById("perfNote");
+  if (note) { note.classList.remove("show"); setTimeout(() => { note.style.display = "none"; }, 300); }
+}
+function perfTourOnSettingsOpen() {
+  if (!tourStep) return;
+  dismissPerfNote();
+  document.getElementById("sidebarToggle")?.classList.remove("attention");
+  document.getElementById("menuSettingsBtn")?.classList.remove("attention");
+  document.querySelector('.ss-tab[data-tab="game"]')?.click();
+  document.getElementById("gfxSection")?.classList.add("bulge");
+  track("perf_tour_step", { step: 1 });
+}
+function perfTourAdvance() {                                     // called when a Graphics chip is tapped
+  if (tourStep !== 1) return;
+  tourStep = 2;
+  document.getElementById("gfxSection")?.classList.remove("bulge");
+  document.querySelector('.ss-tab[data-tab="look"]')?.click();
+  document.getElementById("themeSection")?.classList.add("bulge");
+  track("perf_tour_step", { step: 2 });
+}
+function perfTourEnd() {
+  if (!tourStep) return;
+  tourStep = 0;
+  document.getElementById("gfxSection")?.classList.remove("bulge");
+  document.getElementById("themeSection")?.classList.remove("bulge");
+}
+
+function gfxBurstCap() {
+  return window.__gfxTier === "low" ? 2 : window.__gfxTier === "high" ? 10 : 4;
 }
 
 // ── AUTOSAVE / RESUME ─────────────────────────────────────────────────────────
@@ -1493,6 +1633,14 @@ function getSavedMatch() {
   try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); return s && s.v === 1 && s.board?.length ? s : null; } catch { return null; }
 }
 function buildBoardDOM() {
+  if (gpu) {
+    boardEl.style.display = "none";
+    boardEl.innerHTML = "";
+    gpu.setPlayers(players);
+    gpu.build(rows, cols, lastCellSize);
+    return;
+  }
+  boardEl.style.display = "";
   boardEl.innerHTML = "";
   boardEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell-w))`;
   for (let y = 0; y < rows; y++)
@@ -1596,12 +1744,14 @@ async function resolveReactions() {
   let loops = 0;
   let waveCount = 0;
   let totalBlast = 0;
+  let badWaves = 0;
   const color = players[current].color;
-  const MAX_BURSTS = IS_TOUCH ? 4 : 10;
+  const MAX_BURSTS = gfxBurstCap();
 
   // Cell centres don't move during a chain — measure lazily, once per cell.
   const centres = new Map();
   const centreOf = (x, y) => {
+    if (gpu) return gpu.cellCenter(x, y);
     const k = y * cols + x;
     let c = centres.get(k);
     if (!c) {
@@ -1652,10 +1802,10 @@ async function resolveReactions() {
     }
 
     // 3) WRITE phase — each dirty cell drawn once; pop only the exploders
-    for (const k of dirty) drawCell(k % cols, Math.floor(k / cols), board, boardEl, cols, players, current);
+    for (const k of dirty) paintCell(k % cols, Math.floor(k / cols));
     for (const [x, y] of wave) {
-      const el = boardEl.children[y * cols + x];
-      if (el) el.classList.add("pop");
+      if (gpu) gpu.pop(x, y);
+      else boardEl.children[y * cols + x]?.classList.add("pop");
     }
     for (const [bx, by] of bursts) spawnBlast(bx, by, color);
     playSound("explode");                       // throttled inside sound.js
@@ -1664,14 +1814,18 @@ async function resolveReactions() {
     findExplosions();
 
     // Adaptive delay: small chains get smooth 50ms, huge chains resolve fast
-    const waveDelay = loops < 25 ? 50 : loops < 60 ? 20 : 8;
+    const [d1, d2, d3] = gfxWaveDelays();
+    const waveDelay = loops < 25 ? d1 : loops < 60 ? d2 : d3;
+    const _t0 = performance.now();
     await sleep(waveDelay);
-    for (const [x, y] of wave) boardEl.children[y * cols + x]?.classList.remove("pop");
+    if (performance.now() - _t0 > waveDelay + 120) badWaves++;   // this wave visibly stuttered
+    if (!gpu) for (const [x, y] of wave) boardEl.children[y * cols + x]?.classList.remove("pop");
   }
 
+  maybePerfAdvisor(badWaves, waveCount);
   if (waveCount >= 3) showChainBadge(waveCount);
   if (totalBlast >= 13) {
-    const br = boardEl.getBoundingClientRect();
+    const br = (gpu ? gpu.app.view : boardEl).getBoundingClientRect();
     spawnMegaBlast(br.left + br.width / 2, br.top + br.height / 2, color);
     haptic("mega");
   } else if (waveCount >= 5) haptic("chain");
@@ -1872,14 +2026,18 @@ function advanceTurn() {
 // pulse the current player's cells by toggling a class only.
 function refreshTurnVisuals() {
   const color = players[current]?.color || "#47f2ff";
-  for (const el of boardEl.querySelectorAll(".last-move")) el.classList.remove("last-move");
-  highlightLastMove();
-  if (!IS_TOUCH) {
-    for (let y = 0; y < rows; y++)
-      for (let x = 0; x < cols; x++)
-        boardEl.children[y * cols + x]?.classList.toggle("pulse", board[y][x].owner === current);
+  if (gpu) {
+    gpu.setPulseOwner(current);
+  } else {
+    for (const el of boardEl.querySelectorAll(".last-move")) el.classList.remove("last-move");
+    if (!IS_TOUCH) {
+      for (let y = 0; y < rows; y++)
+        for (let x = 0; x < cols; x++)
+          boardEl.children[y * cols + x]?.classList.toggle("pulse", board[y][x].owner === current);
   }
-  const sweepEl = document.body.classList.contains("board-wire") ? boardEl.parentElement : boardEl;
+  }
+  highlightLastMove();
+  const sweepEl = (gpu || document.body.classList.contains("board-wire")) ? boardEl.parentElement : boardEl;
   sweepEl.style.setProperty("--sweep", color);
   sweepEl.classList.remove("turn-sweep");
   void sweepEl.offsetWidth;                      // restart the animation
@@ -1967,11 +2125,12 @@ function processTurn() {
 function paintAll(withPulse = false) {
   for (let y = 0; y < rows; y++)
     for (let x = 0; x < cols; x++)
-      drawCell(x, y, board, boardEl, cols, players, current, withPulse);
+      paintCell(x, y, withPulse);
   highlightLastMove();
 }
 
 function highlightLastMove() {
+  if (gpu) { gpu.lastMove(lastMove ? lastMove.x : -1, lastMove ? lastMove.y : 0); return; }
   if (!lastMove) return;
   const idx = lastMove.y * cols + lastMove.x;
   boardEl.children[idx]?.classList.add("last-move");
@@ -1994,15 +2153,20 @@ function useHint() {
   updateHintCount();
 
   const reason = getHintReason(best);
-  const cellEl = boardEl.children[best.y * cols + best.x];
-  cellEl.classList.add("hint-active");
-  cellEl.title = reason;
-  setTimeout(() => {
-    cellEl.classList.remove("hint-active");
-    cellEl.title = "";
-  }, 3000);
+  // Spotlight: dim the whole board except the suggested cell (a border alone
+  // is impossible to find on a 12×12 full of glowing orbs)
+  if (gpu) {
+    gpu.hint(best.x, best.y);
+  } else {
+    const cellEl = boardEl.children[best.y * cols + best.x];
+    boardEl.classList.add("hint-dim");
+    cellEl.classList.add("hint-active");
+    cellEl.title = reason;
+  }
+  clearTimeout(window.__hintTimer);
+  window.__hintTimer = setTimeout(clearHintSpotlight, 5000);
 
-  postInfoMsg(`💡 Hint\nThis move ${reason}`, "#88aaff", 3500);
+  postInfoMsg(`💡 Hint\nThis move ${reason}`, "#88aaff", 4000);
 }
 
 function playFakeAd() {

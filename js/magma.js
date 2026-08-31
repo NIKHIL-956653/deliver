@@ -37,7 +37,9 @@ const MAGMA_TOUCH = matchMedia("(hover: none)").matches;
 let magmaFrame = 0;
 export function drawMagma() {
     // Phones: draw every 2nd frame and skip the canvas glow (shadowBlur is very costly on mobile GPUs)
-    if (MAGMA_TOUCH && (++magmaFrame % 2)) { animationFrame = requestAnimationFrame(drawMagma); return; }
+    const lowGfx = window.__gfxTier === "low";
+    const skip = lowGfx ? 4 : (MAGMA_TOUCH ? 2 : 1);
+    if (skip > 1 && (++magmaFrame % skip)) { animationFrame = requestAnimationFrame(drawMagma); return; }
     if (!magmaSettings.rainOn) {
         canvas.style.display = 'none';
         return;
@@ -50,7 +52,7 @@ export function drawMagma() {
 
     ctx.font = fontSize + 'px monospace';
 
-    for (let i = 0; i < droplets.length; i++) {
+    for (let i = 0; i < droplets.length; i += (lowGfx ? 2 : 1)) {   // Low: half the embers
         const char = Math.random() > 0.9 ? '🔥' : '•'; 
         const x = i * fontSize;
         const y = droplets[i] * fontSize;
