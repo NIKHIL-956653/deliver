@@ -84,7 +84,7 @@ function makeTextures(app, size) {
 
   // colourblind marks — a distinct shape per player, high-contrast on any orb colour
   t.marks = [];
-  for (let pi = 0; pi < 6; pi++) {
+  for (let pi = 0; pi < 8; pi++) {
     const ms = 40;
     const mc = document.createElement("canvas"); mc.width = mc.height = ms;
     const m2 = mc.getContext("2d");
@@ -104,6 +104,14 @@ function makeTextures(app, size) {
         case 4: m2.moveTo(cx - q, cy - q); m2.lineTo(cx + q, cy + q);                  // ✕ cross
                 m2.moveTo(cx + q, cy - q); m2.lineTo(cx - q, cy + q); break;
         case 5: m2.arc(cx, cy, q * 0.8, 0, Math.PI * 2); break;                        // ◯ ring
+        case 6: m2.rect(cx - q * 0.8, cy - q * 0.8, q * 1.6, q * 1.6); break;          // ■ square
+        case 7: for (let k = 0; k < 5; k++) {                                          // ★ star
+                  const a = -Math.PI / 2 + k * Math.PI * 2 / 5, bb = a + Math.PI / 5;
+                  const x1 = cx + Math.cos(a) * q,        y1 = cy + Math.sin(a) * q;
+                  const x2 = cx + Math.cos(bb) * q * 0.45, y2 = cy + Math.sin(bb) * q * 0.45;
+                  if (k === 0) m2.moveTo(x1, y1); else m2.lineTo(x1, y1);
+                  m2.lineTo(x2, y2);
+                } m2.closePath(); break;
       }
       if (fill) { if (pi === 4) { m2.lineWidth = 7; m2.strokeStyle = "#fff"; m2.stroke(); } else if (pi === 5) { m2.lineWidth = 6; m2.strokeStyle = "#fff"; m2.stroke(); } else m2.fill(); }
       else { m2.stroke(); }
@@ -321,9 +329,11 @@ export class GPUBoard {
     }
 
     const tint = colorStr ? cssColor(colorStr) : this._ownerColor(data.owner);
-    const cb = document.body.classList.contains("colorblind-mode");
+    const cb = document.body.classList.contains("colorblind-mode") ||
+               document.body.classList.contains("many-players");   // 5+ seats: shapes always
     const oS = this.orbScale();
-    const markTex = this.tex.marks[((data.owner % 6) + 6) % 6];
+    const M = this.tex.marks.length;
+    const markTex = this.tex.marks[((data.owner % M) + M) % M];
 
     const setOrb = (o, scale, px) => {
       o.wrap.visible = true;

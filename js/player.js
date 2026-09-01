@@ -6,7 +6,10 @@ const el = (t, c, attrs = {}) => {
     return n;
 };
 
-export const defaultColors = ["#ff4757", "#1e90ff", "#2ed573", "#ecc668", "#FFA500", "#800080"];
+// Eight seats. The first six are unchanged so existing saved players keep their
+// colour; cyan and pink extend it. Colour alone can't separate eight players for
+// a colour-blind eye, so shape marks turn on automatically from five players up.
+export const defaultColors = ["#ff4757", "#1e90ff", "#2ed573", "#ecc668", "#FFA500", "#800080", "#00e5ff", "#ff5ec4"];
 
 export function buildPlayerSettings(count, players, playerTypes, resetFunc, updateFunc, current) {
   const container = $("#playerSettingsContainer");

@@ -23,8 +23,8 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./leaderboard-config.js";
 import { track } from "./analytics.js";
 
-const SLOT_COLORS = ["#ff4757", "#2ed573", "#3742fa", "#ffa502"];
-const MAX_PLAYERS = 4;
+const SLOT_COLORS = ["#ff4757", "#2ed573", "#3742fa", "#ffa502", "#800080", "#ecc668", "#00e5ff", "#ff5ec4"];
+const MAX_PLAYERS = 8;
 const clientId = "c_" + Math.random().toString(36).slice(2, 10);
 
 // localStorage.neon_vpvp_local = "1" forces same-device mode (used by automated tests).

@@ -602,6 +602,24 @@ function backToMenu() {
 
 function setupPlayers(count) {
   buildPlayerSettings(count, players, playerTypes, () => {}, () => {}, current);
+  applyCrowdRules();
+}
+
+// With five or more seats, colour alone stops being readable — every orb wears
+// its owner's shape from here on, whatever the accessibility setting says.
+function applyCrowdRules() {
+  document.body.classList.toggle("many-players", players.length >= 5);
+  if (gpu) gpu.refreshAll();
+}
+
+// Each player needs room to breathe; nine cells a head is the floor. Returns the
+// smallest listed grid that fits, or null when the current one is already fine.
+function gridForPlayers(n) {
+  const need = n * 9;
+  const opts = [[6,6],[6,9],[9,9],[8,12],[12,12]];
+  if (cols * rows >= need) return null;
+  for (const [c, r] of opts) if (c * r >= need) return `${c}x${r}`;
+  return "12x12";
 }
 
 // ── DAILY CHALLENGE ─────────────────────────────────────────────────────────
@@ -1322,9 +1340,21 @@ function resetGame() {
     return;
   }
 
-  const [c, r] = (mode === "online" || customLayout) ? [cols, rows] : gridSelect.value.split("x").map(Number);
+  let [c, r] = (mode === "online" || customLayout) ? [cols, rows] : gridSelect.value.split("x").map(Number);
+  if (!customLayout && mode !== "online") {
+    cols = c; rows = r;
+    const bigger = gridForPlayers(players.length);          // 8 players on 6×6 isn't a game
+    if (bigger) {
+      [c, r] = bigger.split("x").map(Number);
+      if (gridSelect) gridSelect.value = bigger;
+      document.querySelectorAll('.chips[data-for="gridSelect"] .chip')
+        .forEach(ch => ch.classList.toggle("active", ch.dataset.value === bigger));
+      postInfoMsg(`Board widened to ${c}×${r} for ${players.length} players`, "#ffa502", 2600);
+    }
+  }
   cols = c;
   rows = r;
+  applyCrowdRules();
   levelTimer = trackTimer();
   track("match_start", { mode, grid: gridSelect.value, players: players.length, ai_diff: playerTypes.find(p => p?.type === "ai")?.difficulty || null });
   setCellSize(cols, rows);
