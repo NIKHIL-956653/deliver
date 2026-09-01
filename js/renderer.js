@@ -155,7 +155,8 @@ export class GPUBoard {
       const px = e.clientX - rect.left, py = e.clientY - rect.top;
       const step = this.size + this.gap;
       const x = Math.floor(px / step), y = Math.floor(py / step);
-      if (x >= 0 && x < this.cols && y >= 0 && y < this.rows &&
+      const cc = this.cells[y * this.cols + x];
+      if (x >= 0 && x < this.cols && y >= 0 && y < this.rows && !(cc && cc.state && cc.state.hidden) &&
           px - x * step <= this.size && py - y * step <= this.size) {
         this.press(x, y, true);
         this.onTap(x, y, e);
@@ -248,6 +249,12 @@ export class GPUBoard {
 
   _paintBase(c) {
     const s = c.state, th = this.theme;
+    if (s.hidden) {                       // custom-board hole: no tile, no border
+      c.bg.visible = false; c.border.visible = false; c.glow.visible = false;
+      c.lastMv.visible = false;
+      return;
+    }
+    c.border.visible = true;
     if (s.blocked) {
       c.bg.visible = true; c.bg.tint = 0x0a0a0a; c.bg.alpha = th.wire ? 0.5 : 0.9;
       c.border.tint = th.border; c.border.alpha = 0.25;
@@ -304,11 +311,11 @@ export class GPUBoard {
   updateCell(x, y, data, colorStr) {
     const c = this.cells[y * this.cols + x];
     if (!c) return;
-    c.state = { owner: data.owner, count: data.count, blocked: !!data.isBlocked, critical: !!data.critical };
+    c.state = { owner: data.owner, count: data.count, blocked: !!data.isBlocked, critical: !!data.critical, hidden: !!data.hidden };
     this._paintBase(c);
     const P = this._ensureParts(c);
 
-    if (c.state.blocked || data.count === 0) {
+    if (c.state.hidden || c.state.blocked || data.count === 0) {
       P.o1.wrap.visible = P.o2.wrap.visible = P.bomb.visible = P.spark.visible = P.bmark.visible = false;
       return;
     }

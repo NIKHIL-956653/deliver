@@ -353,6 +353,7 @@
       <button id="dailyChallengeBtn" class="daily-cta">⚡ Daily Challenge</button>
       <!-- 🧪 VIRTUAL PVP · TESTING PHASE 1 — remove this button + #vpvpModal at release -->
       <button id="vpvpBtn" class="vpvp-cta">🧪 Virtual PvP <span class="vpvp-tag">TEST</span></button>
+      <button id="customBoardBtn" class="custom-cta">🎨 Custom Board</button>
 
       <div id="nextAchHint" class="next-ach-hint"></div>
       <button id="installBtn" class="install-btn" type="button" style="display:none">📲 Install app — play offline</button>
@@ -579,6 +580,44 @@
       <div class="tut-actions">
         <button id="tutNextBtn" class="tut-btn primary">Next ▶</button>
         <button id="tutSkipBtn" class="tut-btn secondary">Skip</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BOARD EDITOR ─────────────────────────────────────────────── -->
+  <div id="boardEditor" class="be-screen" style="display:none">
+    <div class="be-head">
+      <button id="beBackBtn" class="btn small">← Back</button>
+      <h2>Custom Board</h2>
+      <span id="beSlots" class="be-slots"></span>
+    </div>
+
+    <div id="beListWrap" class="be-body">
+      <div id="beList" class="be-list"></div>
+      <button id="beNewBtn" class="modal-btn primary be-new">+ New board</button>
+    </div>
+
+    <div id="beEditWrap" class="be-body" style="display:none">
+      <div class="be-toolbar">
+        <div id="beTools" class="be-tools">
+          <button class="be-tool active" data-tool="1"><span class="be-swatch play"></span>Cell</button>
+          <button class="be-tool" data-tool="2"><span class="be-swatch block"></span>Block</button>
+          <button class="be-tool" data-tool="0"><span class="be-swatch hole"></span>Erase</button>
+        </div>
+        <div class="be-sizes">
+          <label>Cols <input id="beCols" type="number" min="4" max="12" value="8" /></label>
+          <label>Rows <input id="beRows" type="number" min="4" max="16" value="10" /></label>
+        </div>
+      </div>
+      <p class="be-hint">Drag across the grid to paint. Anything left empty isn't part of the board.</p>
+      <div id="beGrid" class="be-grid"></div>
+      <p id="beStatus" class="be-status"></p>
+      <input id="beName" class="vpvp-input be-nameinput" maxlength="18" placeholder="Board name" />
+      <div class="be-actions">
+        <button id="beClearBtn" class="modal-btn secondary">Clear</button>
+        <button id="beFillBtn" class="modal-btn secondary">Fill all</button>
+        <button id="beSaveBtn" class="modal-btn secondary">Save</button>
+        <button id="bePlayBtn" class="modal-btn primary">▶ Play</button>
       </div>
     </div>
   </div>

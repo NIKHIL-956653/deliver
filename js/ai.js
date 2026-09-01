@@ -27,7 +27,7 @@ export function evaluateBoard(board, player, rows, cols) {
       const cell = board[y][x];
       if (cell.owner === -1 || cell.isBlocked) continue;
 
-      const cap = capacity(x, y, rows, cols);
+      const cap = capacity(x, y, rows, cols, board);
       const mine = cell.owner === player;
       if (mine) myOrbs += cell.count; else enemyOrbs += cell.count;
 
@@ -39,7 +39,7 @@ export function evaluateBoard(board, player, rows, cols) {
       for (const [nx, ny] of neighbors(x, y, rows, cols, board)) {
         const nb = board[ny][nx];
         if (nb.owner !== -1 && nb.owner !== cell.owner &&
-            nb.count === capacity(nx, ny, rows, cols) - 1) hostileCritNb++;
+            nb.count === capacity(nx, ny, rows, cols, board) - 1) hostileCritNb++;
       }
 
       if (hostileCritNb) s -= (5 - cap) * hostileCritNb; // about to be captured
@@ -64,7 +64,7 @@ export function simulateBoardState(initialBoard, x, y, player, rows, cols) {
   let loops = 0;
   while (q.length && loops++ < 600) {
     const [cx, cy] = q.shift();
-    const cap = capacity(cx, cy, rows, cols);
+    const cap = capacity(cx, cy, rows, cols, clone);
     const cell = clone[cy][cx];
     if (cell.count < cap) continue;
     cell.count -= cap;
@@ -72,7 +72,7 @@ export function simulateBoardState(initialBoard, x, y, player, rows, cols) {
     for (const [nx, ny] of neighbors(cx, cy, rows, cols, clone)) {
       clone[ny][nx].owner = player;
       clone[ny][nx].count++;
-      if (clone[ny][nx].count >= capacity(nx, ny, rows, cols)) q.push([nx, ny]);
+      if (clone[ny][nx].count >= capacity(nx, ny, rows, cols, clone)) q.push([nx, ny]);
     }
   }
   return clone;
@@ -94,7 +94,7 @@ function orderedMoves(board, p, rows, cols) {
   return legalMoves(board, p, rows, cols)
     .map(m => {
       const c = board[m.y][m.x];
-      const cap = capacity(m.x, m.y, rows, cols);
+      const cap = capacity(m.x, m.y, rows, cols, board);
       const k = (c.count + 1 >= cap ? 100 : 0) + c.count * 10 + (cap === 2 ? 3 : cap === 3 ? 1 : 0);
       return { x: m.x, y: m.y, k };
     })

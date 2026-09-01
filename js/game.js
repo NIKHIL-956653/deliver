@@ -18,6 +18,7 @@ import { SAGA_LEVELS } from "./levels.js";
 import { haptic, hapticsEnabled, setHaptics, hapticsSupported } from "./haptics.js";
 import { track, reportError, timer as trackTimer } from "./analytics.js";
 import { shareResult } from "./sharecard.js";
+import { initBoardEditor, seats as boardSeats } from "./boardeditor.js";
 import { GPUBoard } from "./renderer.js";
 // 🧪 VIRTUAL PVP · TESTING PHASE 1 — remove this import (and all online* hooks) at release
 import { initOnline, onlineActive, onlineMySlot, onlineSendMove, onlineLeave, onlineTurnChanged } from "./online.js";
@@ -580,6 +581,7 @@ function startGame() {
 }
 
 function backToMenu() {
+  customLayout = null;
   onlineLeave();                                 // 🧪 vpvp: no-op unless in a room
   if (mode === "online") mode = "normal";
   if (undoBtn) undoBtn.style.display = "";
@@ -1320,7 +1322,7 @@ function resetGame() {
     return;
   }
 
-  const [c, r] = mode === "online" ? [cols, rows] : gridSelect.value.split("x").map(Number);
+  const [c, r] = (mode === "online" || customLayout) ? [cols, rows] : gridSelect.value.split("x").map(Number);
   cols = c;
   rows = r;
   levelTimer = trackTimer();
@@ -1356,6 +1358,7 @@ function resetGame() {
       isBlocked: false
     }))
   );
+  applyCustomLayout();
 
   buildBoardDOM();
 
@@ -1533,7 +1536,7 @@ function initGPU() {
 function paintCell(x, y, withPulse = false) {
   if (gpu) {
     const d = board[y][x];
-    const cap = capacity(x, y, rows, cols);
+    const cap = capacity(x, y, rows, cols, board);
     gpu.updateCell(x, y, { ...d, critical: d.count > 0 && d.count === cap - 1 }, players[d.owner]?.color);
   } else {
     drawCell(x, y, board, boardEl, cols, players, current, withPulse);
@@ -1739,7 +1742,7 @@ async function resolveReactions() {
     q.length = 0;
     for (let y = 0; y < rows; y++)
       for (let x = 0; x < cols; x++)
-        if (board[y][x].count >= capacity(x, y, rows, cols))
+        if (board[y][x].count >= capacity(x, y, rows, cols, board))
           q.push([x, y]);
   };
 
@@ -1781,7 +1784,7 @@ async function resolveReactions() {
 
     const wave = [...new Set(q.map(([x, y]) => `${x},${y}`))]
       .map(s => s.split(",").map(Number))
-      .filter(([x, y]) => board[y][x].count >= capacity(x, y, rows, cols));
+      .filter(([x, y]) => board[y][x].count >= capacity(x, y, rows, cols, board));
 
     totalBlast += wave.length;
     q.length = 0;
@@ -1795,7 +1798,7 @@ async function resolveReactions() {
     // 2) MODEL phase — apply every explosion in the wave
     const dirty = new Set();
     for (const [x, y] of wave) {
-      const cap = capacity(x, y, rows, cols);
+      const cap = capacity(x, y, rows, cols, board);
       const cell = board[y][x];
       cell.count -= cap;
       if (cell.count === 0) cell.owner = -1;
@@ -2266,7 +2269,7 @@ function updateHintCount() {
 
 function getHintReason(move) {
   const { x, y } = move;
-  const cap = capacity(x, y, rows, cols);
+  const cap = capacity(x, y, rows, cols, board);
   const cell = board[y][x];
 
   if (cell.count + 1 >= cap) return "triggers a chain reaction!";
@@ -2275,7 +2278,7 @@ function getHintReason(move) {
   const nbrs = neighbors(x, y, rows, cols, board);
   const enemyCrits = nbrs.filter(([nx, ny]) => {
     const nb = board[ny][nx];
-    return nb.owner !== -1 && nb.owner !== current && nb.count >= capacity(nx, ny, rows, cols) - 1;
+    return nb.owner !== -1 && nb.owner !== current && nb.count >= capacity(nx, ny, rows, cols, board) - 1;
   });
   if (enemyCrits.length > 0) return "blocks an enemy chain reaction!";
 
@@ -2811,8 +2814,41 @@ function openReplaysModal() {
   modal.style.display = "flex";
 }
 
+let customLayout = null;                  // active custom board design, if any
+function applyCustomLayout() {
+  if (!customLayout) return;
+  const { cols: lc, cells } = customLayout;
+  for (let y = 0; y < rows; y++)
+    for (let x = 0; x < cols; x++) {
+      const v = cells[y * lc + x] | 0;
+      const cell = board[y][x];
+      if (v === 0) { cell.isBlocked = true; cell.hidden = true; }        // hole
+      else if (v === 2) { cell.isBlocked = true; cell.hidden = false; }  // obstacle
+    }
+}
+
 let lastWinnerIdx = 0;                    // filled in when a match ends (share card)
 function mySeat() { return onlineActive() ? onlineMySlot() : 0; }
+
+// ── CUSTOM BOARD ──────────────────────────────────────────────────────────────
+function startCustomBoard(layout) {
+  customLayout = layout;
+  mode = "normal";
+  isDailyMode = false;
+  cols = layout.cols; rows = layout.rows;
+  // seat as many players as the menu asks for, capped by what the design can hold
+  const want = parseInt(playerCountSelect?.value, 10) || 2;
+  const max = Math.max(2, boardSeats(layout));
+  if (!playerTypes || playerTypes.length === 0) setupPlayers(Math.min(want, max));
+  else if (players.length > max) setupPlayers(max);
+  track("custom_board_play", { cols: layout.cols, rows: layout.rows, players: players.length });
+  document.getElementById("mainMenu").style.display = "none";
+  document.getElementById("gameView")?.classList.add("active");
+  if (timerContainer) timerContainer.style.display = "none";
+  resetGame();
+  postInfoMsg(`🎨 ${layout.name}`, "#00ffcc", 2000);
+}
+initBoardEditor({ onPlay: startCustomBoard });
 
 // ── SHARE CARD ────────────────────────────────────────────────────────────────
 // Offered after any win: a 1080×1080 victory image straight to the share sheet.

@@ -8,8 +8,22 @@ const el = (t, c, attrs = {}) => {
 };
 
 // CAPACITY LOGIC
-export const capacity = (x, y, rows, cols) => {
-  const edges = [y == 0, y == rows - 1, x == 0, x == cols - 1].filter(Boolean).length;
+// A cell explodes when it holds as many orbs as it has NEIGHBOURS. Pass the
+// board and it counts real ones, so blocked squares and custom board shapes
+// behave correctly (previously it guessed from the rectangle, which meant a
+// cell beside a blocked square needed 4 orbs but had only 3 places to send
+// them — one orb vanished every explosion). On a plain rectangular board the
+// two paths give identical numbers, so normal play is unchanged.
+export const capacity = (x, y, rows, cols, board) => {
+  if (board) {
+    let n = 0;
+    if (x > 0        && board[y][x - 1] && !board[y][x - 1].isBlocked) n++;
+    if (x < cols - 1 && board[y][x + 1] && !board[y][x + 1].isBlocked) n++;
+    if (y > 0        && board[y - 1][x] && !board[y - 1][x].isBlocked) n++;
+    if (y < rows - 1 && board[y + 1][x] && !board[y + 1][x].isBlocked) n++;
+    return n === 0 ? 99 : n;         // isolated cell can never fire (editor prevents these)
+  }
+  const edges = (y === 0) + (y === rows - 1) + (x === 0) + (x === cols - 1);
   return edges === 2 ? 2 : edges === 1 ? 3 : 4;
 };
 
@@ -96,6 +110,12 @@ export function drawCell(x, y, board, boardEl, cols, players, current, withPulse
   cellEl.innerHTML = "";
   cellEl.className = "cell"; 
 
+  // Not part of the board at all (custom-board hole)
+  if (data.hidden) {
+    cellEl.classList.add("hole");
+    return;
+  }
+
   // Blocked cell
   if (data.isBlocked) {
     cellEl.classList.add("blocked");
@@ -115,7 +135,7 @@ export function drawCell(x, y, board, boardEl, cols, players, current, withPulse
   }
 
   // Critical Logic
-  const cap = capacity(x, y, rows, cols);
+  const cap = capacity(x, y, rows, cols, board);
   const isCrit = data.count === cap - 1 && data.count > 0;
   if (isCrit) cellEl.classList.add("critical");
 
